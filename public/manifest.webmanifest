@@ -1,0 +1,16 @@
+{
+  "name": "StitchWell Tracking",
+  "short_name": "StitchWell",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0ea5e9",
+  "theme_color": "#0ea5e9",
+  "description": "Tailoring workflow management with realtime assignments and notifications",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "gcm_sender_id": "103953800507"
+}
+
