@@ -22,7 +22,8 @@ export const initFirebase = async () => {
     hasStorageBucket: !!cfg.storageBucket,
     hasMessagingSenderId: !!cfg.messagingSenderId,
     hasAppId: !!cfg.appId,
-    projectId: cfg.projectId || 'NOT_SET'
+    projectId: cfg.projectId || 'NOT_SET',
+    timestamp: new Date().toISOString() // Force fresh deployment
   });
   
   if (!cfg.apiKey || !cfg.messagingSenderId || !cfg.appId) {
