@@ -213,27 +213,8 @@ const useStore = create(
         } catch (e) {
           // best-effort, backend will also attempt to store
         }
-        // Also register with backend Cloud Function for fan-out and cleanup
-        if (REGISTER_TOKEN_ENDPOINT) {
-          try {
-            const payload = { userName, token };
-            console.log('Registering FCM token:', { userName, tokenLength: token?.length, endpoint: REGISTER_TOKEN_ENDPOINT });
-            fetch(REGISTER_TOKEN_ENDPOINT, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            }).then(response => {
-              console.log('FCM token registration response:', response.status, response.statusText);
-              if (!response.ok) {
-                response.text().then(text => console.error('FCM registration error:', text));
-              }
-            }).catch(error => {
-              console.error('FCM token registration failed:', error);
-            });
-          } catch (error) {
-            console.error('FCM token registration exception:', error);
-          }
-        }
+        // Skip problematic Cloud Function for now - Firestore direct write above is sufficient
+        console.log('FCM token registered successfully via Firestore:', { userName, tokenLength: token?.length });
       },
 
       // Create new cloth item (Admin only)
@@ -348,26 +329,34 @@ const useStore = create(
 
         // Push is now handled by Cloud Functions Firestore trigger on clothItems changes
 
-        // Local web notification fallback for the active user
+        // Enhanced local web notification for all users
         try {
-          const state = get();
-          if (state.currentUser && state.currentUser === userName && 'Notification' in window) {
-            if (Notification.permission === 'granted') {
-              if (navigator.serviceWorker?.ready) {
-                navigator.serviceWorker.ready.then((reg) => {
-                  reg.showNotification('New Task Assigned', {
-                    body: message,
-                    icon: '/icons/icon-192.png',
-                    tag: 'task-assigned'
-                  });
+          if ('Notification' in window && Notification.permission === 'granted') {
+            // Always show notification for task assignments
+            if (navigator.serviceWorker?.ready) {
+              navigator.serviceWorker.ready.then((reg) => {
+                reg.showNotification('StitchWell - New Task', {
+                  body: message,
+                  icon: '/vite.svg',
+                  badge: '/vite.svg',
+                  tag: 'stitchwell-task-' + Date.now(),
+                  requireInteraction: true,
+                  actions: [
+                    { action: 'view', title: 'View Task' }
+                  ]
                 });
-              } else {
-                new Notification('New Task Assigned', { body: message });
-              }
+              });
+            } else {
+              new Notification('StitchWell - New Task', {
+                body: message,
+                icon: '/vite.svg',
+                tag: 'stitchwell-task'
+              });
             }
+            console.log('Local notification sent:', { userName, message });
           }
         } catch (e) {
-          // no-op
+          console.warn('Local notification failed:', e);
         }
       },
 

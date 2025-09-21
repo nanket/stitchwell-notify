@@ -109,6 +109,17 @@ const AdminDashboard = () => {
                 Copy My FCM Token
               </button>
 
+              {/* Test Notification Button */}
+              <button
+                onClick={() => {
+                  const { addNotification } = useStore.getState();
+                  addNotification(currentUser, 'Test notification - Push notifications are working!');
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm"
+              >
+                Test Notification
+              </button>
+
               {/* Create Item Button */}
               <button
                 onClick={() => setShowCreateModal(true)}

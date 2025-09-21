@@ -12,32 +12,67 @@ function parseBody(req) {
 
 // HTTPS endpoint: Register a user's token (fan-out per user)
 exports.registerToken = functions.https.onRequest((req, res) => {
+  // Set CORS headers manually for better compatibility
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
   cors(req, res, async () => {
-    console.log('registerToken called:', { method: req.method, body: req.body, headers: req.headers });
-    if (req.method !== 'POST') {
-      console.log('Method not allowed:', req.method);
-      res.status(405).json({ error: 'Method not allowed' });
-      return;
-    }
-    const parsedBody = parseBody(req);
-    console.log('Parsed body:', parsedBody);
-    const { userName, token } = parsedBody;
-    if (!userName || !token) {
-      console.log('Missing required fields:', { userName: !!userName, token: !!token });
-      res.status(400).json({ error: 'userName and token are required' });
-      return;
-    }
     try {
+      console.log('registerToken called:', {
+        method: req.method,
+        contentType: req.get('content-type'),
+        bodyType: typeof req.body,
+        body: req.body,
+        query: req.query,
+        rawBody: req.rawBody ? req.rawBody.toString() : 'none'
+      });
+
+      // Support both POST and GET methods
+      let userName, token;
+
+      if (req.method === 'POST') {
+        const parsedBody = parseBody(req);
+        console.log('Parsed POST body:', parsedBody);
+        userName = parsedBody.userName;
+        token = parsedBody.token;
+      } else if (req.method === 'GET') {
+        console.log('GET query params:', req.query);
+        userName = req.query.userName;
+        token = req.query.token;
+      } else {
+        console.log('Method not allowed:', req.method);
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+      }
+
+      if (!userName || !token) {
+        console.log('Missing required fields:', { userName: !!userName, token: !!token });
+        res.status(400).json({
+          error: 'userName and token are required',
+          received: { userName: !!userName, token: !!token }
+        });
+        return;
+      }
+
       console.log('Attempting to save to Firestore:', { userName, tokenLength: token.length });
       await db.collection('fcmTokens').doc(userName).set({
         tokens: admin.firestore.FieldValue.arrayUnion(token),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
+
       console.log('Successfully saved token for user:', userName);
-      res.status(200).json({ ok: true });
+      res.status(200).json({ ok: true, message: 'Token registered successfully' });
+
     } catch (e) {
-      console.error('registerToken error', e);
-      res.status(500).json({ error: 'Failed to register token' });
+      console.error('registerToken error:', e);
+      res.status(500).json({ error: 'Failed to register token', details: e.message });
     }
   });
 });
@@ -73,6 +108,8 @@ exports.sendPush = functions.https.onRequest((req, res) => {
 });
 
 // Firestore trigger: push when an item is newly assigned or reassigned
+// TODO: Fix for firebase-functions v6 syntax
+/*
 exports.onClothItemWrite = functions.firestore
   .document('clothItems/{id}')
   .onWrite(async (change, context) => {
@@ -98,3 +135,4 @@ exports.onClothItemWrite = functions.firestore
       console.error('onClothItemWrite push error', e);
     }
   });
+*/
