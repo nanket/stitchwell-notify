@@ -99,9 +99,10 @@ const AdminDashboard = () => {
               {/* Copy FCM Token */}
               <button
                 onClick={() => {
-                  const token = fcmTokens?.[currentUser];
-                  if (token) {
-                    navigator.clipboard?.writeText(token);
+                  const tokens = fcmTokens?.[currentUser] || [];
+                  const first = Array.isArray(tokens) ? tokens[0] : tokens;
+                  if (first) {
+                    navigator.clipboard?.writeText(first);
                   }
                 }}
                 className="btn-secondary px-4 py-2"
