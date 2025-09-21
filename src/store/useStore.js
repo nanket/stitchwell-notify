@@ -311,6 +311,44 @@ const useStore = create(
         }
       },
 
+      // Send direct web push notification (for testing)
+      sendWebPush: async (userName, title, body) => {
+        const PUSH_ENDPOINT = import.meta.env.VITE_PUSH_ENDPOINT;
+        if (!PUSH_ENDPOINT) {
+          console.error('VITE_PUSH_ENDPOINT not configured');
+          return;
+        }
+
+        try {
+          const response = await fetch(PUSH_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userName,
+              title: title || 'StitchWell Notification',
+              body: body || 'You have a new update',
+              data: {
+                url: '/',
+                timestamp: new Date().toISOString()
+              }
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Direct web push sent:', result);
+            return result;
+          } else {
+            const errorText = await response.text();
+            console.error('Direct web push failed:', response.status, errorText);
+            throw new Error(`Push failed: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('Direct web push error:', error);
+          throw error;
+        }
+      },
+
       // Add notification for a specific user (also triggers FCM push)
       addNotification: async (userName, message) => {
         const notif = { userName, message, timestamp: new Date().toISOString(), read: false };
@@ -329,34 +367,46 @@ const useStore = create(
 
         // Push is now handled by Cloud Functions Firestore trigger on clothItems changes
 
-        // Enhanced local web notification for all users
+        // Send actual web push notification via FCM
         try {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            // Always show notification for task assignments
-            if (navigator.serviceWorker?.ready) {
-              navigator.serviceWorker.ready.then((reg) => {
-                reg.showNotification('StitchWell - New Task', {
+          const state = get();
+          const userTokens = state.fcmTokens[userName] || [];
+
+          if (userTokens.length === 0) {
+            console.log('No FCM tokens found for user:', userName);
+            return;
+          }
+
+          // Send push notification using our Cloud Function
+          const PUSH_ENDPOINT = import.meta.env.VITE_PUSH_ENDPOINT;
+          if (PUSH_ENDPOINT) {
+            try {
+              const response = await fetch(PUSH_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userName,
+                  title: 'StitchWell - New Task',
                   body: message,
-                  icon: '/vite.svg',
-                  badge: '/vite.svg',
-                  tag: 'stitchwell-task-' + Date.now(),
-                  requireInteraction: true,
-                  actions: [
-                    { action: 'view', title: 'View Task' }
-                  ]
-                });
+                  data: {
+                    url: '/',
+                    timestamp: new Date().toISOString()
+                  }
+                })
               });
-            } else {
-              new Notification('StitchWell - New Task', {
-                body: message,
-                icon: '/vite.svg',
-                tag: 'stitchwell-task'
-              });
+
+              if (response.ok) {
+                const result = await response.json();
+                console.log('Web push notification sent successfully:', result);
+              } else {
+                console.error('Push notification failed:', response.status, response.statusText);
+              }
+            } catch (error) {
+              console.error('Push notification error:', error);
             }
-            console.log('Local notification sent:', { userName, message });
           }
         } catch (e) {
-          console.warn('Local notification failed:', e);
+          console.warn('Web push notification failed:', e);
         }
       },
 

@@ -109,15 +109,24 @@ const AdminDashboard = () => {
                 Copy My FCM Token
               </button>
 
-              {/* Test Notification Button */}
+              {/* Test Web Push Button */}
               <button
-                onClick={() => {
-                  const { addNotification } = useStore.getState();
-                  addNotification(currentUser, 'Test notification - Push notifications are working!');
+                onClick={async () => {
+                  try {
+                    const { sendWebPush } = useStore.getState();
+                    await sendWebPush(
+                      currentUser,
+                      'StitchWell Test',
+                      'Web push notifications are working! 🎉'
+                    );
+                    toast.success('Web push sent!');
+                  } catch (error) {
+                    toast.error('Push failed: ' + error.message);
+                  }
                 }}
                 className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm"
               >
-                Test Notification
+                Test Web Push
               </button>
 
               {/* Create Item Button */}

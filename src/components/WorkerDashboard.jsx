@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { 
-  LogOut, 
-  Bell, 
-  User, 
+import {
+  LogOut,
+  Bell,
+  User,
   Scissors,
   CheckCircle,
   Clock,
@@ -11,6 +11,7 @@ import {
 import useStore from '../store/useStore';
 import TaskCard from './TaskCard';
 import NotificationPanel from './NotificationPanel';
+import { toast } from 'react-hot-toast';
 
 const WorkerDashboard = () => {
   const currentUser = useStore(s => s.currentUser);
@@ -55,6 +56,26 @@ const WorkerDashboard = () => {
 
             {/* Actions */}
             <div className="flex items-center space-x-4">
+              {/* Test Web Push Button */}
+              <button
+                onClick={async () => {
+                  try {
+                    const { sendWebPush } = useStore.getState();
+                    await sendWebPush(
+                      currentUser,
+                      'StitchWell Test',
+                      'Web push notifications are working! 🎉'
+                    );
+                    toast.success('Web push sent!');
+                  } catch (error) {
+                    toast.error('Push failed: ' + error.message);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+              >
+                Test Push
+              </button>
+
               {/* Notifications */}
               <div className="relative">
                 <button
