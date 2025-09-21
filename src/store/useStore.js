@@ -4,7 +4,23 @@ import toast from 'react-hot-toast';
 import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { initFirebase } from '../firebase';
 
-const PUSH_ENDPOINT = import.meta.env.VITE_PUSH_ENDPOINT || '';
+// Compute push endpoint dynamically. Prefer VITE_PUSH_ENDPOINT, else derive from REGISTER_TOKEN_ENDPOINT by swapping the path to sendTestNotification.
+function getPushEndpoint() {
+  const direct = import.meta.env.VITE_PUSH_ENDPOINT;
+  if (direct) return direct;
+  const reg = import.meta.env.VITE_REGISTER_TOKEN_ENDPOINT || '';
+  try {
+    if (!reg) return '';
+    const u = new URL(reg);
+    // Replace the last path segment with the push function name
+    const parts = u.pathname.split('/');
+    parts[parts.length - 1] = 'sendTestNotification';
+    u.pathname = parts.join('/');
+    return u.toString();
+  } catch (_) {
+    return '';
+  }
+}
 const REGISTER_TOKEN_ENDPOINT = import.meta.env.VITE_REGISTER_TOKEN_ENDPOINT || '';
 
 // Firestore helpers and listeners (module-scoped)
@@ -313,14 +329,15 @@ const useStore = create(
 
       // Send direct web push notification (for testing)
       sendWebPush: async (userName, title, body) => {
-        const PUSH_ENDPOINT = import.meta.env.VITE_PUSH_ENDPOINT;
+        const PUSH_ENDPOINT = getPushEndpoint();
         if (!PUSH_ENDPOINT) {
-          console.error('VITE_PUSH_ENDPOINT not configured');
+          console.error('Push endpoint not configured');
           return;
         }
 
         try {
-          const response = await fetch(PUSH_ENDPOINT, {
+          // Primary attempt: POST JSON
+          let response = await fetch(PUSH_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -334,14 +351,22 @@ const useStore = create(
             })
           });
 
-          if (response.ok) {
+          if (!response.ok) {
+            // Fallback: GET with query string for environments that reject JSON parsing (400 INVALID_ARGUMENT)
+            const qs = new URLSearchParams({ userName, title: title || 'StitchWell Notification', body: body || 'You have a new update' });
+            try {
+              response = await fetch(`${PUSH_ENDPOINT}?${qs.toString()}`, { method: 'GET' });
+            } catch (_) {}
+          }
+
+          if (response && response.ok) {
             const result = await response.json();
             console.log('Direct web push sent:', result);
             return result;
           } else {
-            const errorText = await response.text();
-            console.error('Direct web push failed:', response.status, errorText);
-            throw new Error(`Push failed: ${response.status}`);
+            const errorText = response ? await response.text() : 'no response';
+            console.error('Direct web push failed:', response?.status, errorText);
+            throw new Error(`Push failed: ${response?.status}`);
           }
         } catch (error) {
           console.error('Direct web push error:', error);
@@ -367,43 +392,42 @@ const useStore = create(
 
         // Push is now handled by Cloud Functions Firestore trigger on clothItems changes
 
-        // Send actual web push notification via FCM
+        // Send actual web push notification via Cloud Function (server looks up tokens from Firestore)
         try {
-          const state = get();
-          const userTokens = state.fcmTokens[userName] || [];
-
-          if (userTokens.length === 0) {
-            console.log('No FCM tokens found for user:', userName);
+          const PUSH_ENDPOINT = getPushEndpoint();
+          if (!PUSH_ENDPOINT) {
+            console.error('Push endpoint not configured');
             return;
           }
 
-          // Send push notification using our Cloud Function
-          const PUSH_ENDPOINT = import.meta.env.VITE_PUSH_ENDPOINT;
-          if (PUSH_ENDPOINT) {
-            try {
-              const response = await fetch(PUSH_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userName,
-                  title: 'StitchWell - New Task',
-                  body: message,
-                  data: {
-                    url: '/',
-                    timestamp: new Date().toISOString()
-                  }
-                })
-              });
-
-              if (response.ok) {
-                const result = await response.json();
-                console.log('Web push notification sent successfully:', result);
-              } else {
-                console.error('Push notification failed:', response.status, response.statusText);
+          let response = await fetch(PUSH_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userName,
+              title: 'StitchWell - New Task',
+              body: message,
+              data: {
+                url: '/',
+                timestamp: new Date().toISOString()
               }
-            } catch (error) {
-              console.error('Push notification error:', error);
-            }
+            })
+          });
+
+          if (!response.ok) {
+            const qs = new URLSearchParams({ userName, title: 'StitchWell - New Task', body: message });
+            try {
+              response = await fetch(`${PUSH_ENDPOINT}?${qs.toString()}`, { method: 'GET' });
+            } catch (_) {}
+          }
+
+          if (response && response.ok) {
+            const result = await response.json();
+            console.log('Web push notification sent successfully:', result);
+          } else {
+            let errorText = '';
+            try { errorText = await (response ? response.text() : Promise.resolve('no response')); } catch (_) {}
+            console.error('Push notification failed:', response?.status, errorText || response?.statusText);
           }
         } catch (e) {
           console.warn('Web push notification failed:', e);

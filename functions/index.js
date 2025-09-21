@@ -79,9 +79,31 @@ exports.registerToken = functions.https.onRequest((req, res) => {
 
 // HTTPS endpoint: Send push by userName (server looks up tokens)
 exports.sendPush = functions.https.onRequest((req, res) => {
+  // Set CORS headers manually for better compatibility
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+
   cors(req, res, async () => {
-    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
-    const { userName, token, title, body, data } = parseBody(req);
+    let userName, token, title, body, data;
+    if (req.method === 'POST') {
+      ({ userName, token, title, body, data } = parseBody(req));
+    } else if (req.method === 'GET') {
+      userName = req.query.userName;
+      token = req.query.token;
+      title = req.query.title;
+      body = req.query.body;
+      data = undefined;
+    } else {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
     try {
       let tokens = [];
       if (token) {
@@ -90,13 +112,19 @@ exports.sendPush = functions.https.onRequest((req, res) => {
         const docSnap = await db.collection('fcmTokens').doc(userName).get();
         tokens = docSnap.exists ? (docSnap.data().tokens || []) : [];
       }
+      if (!Array.isArray(tokens)) tokens = [];
+      tokens = tokens.filter(Boolean).map(t => String(t));
       if (!tokens.length) { res.status(200).json({ ok: 0, message: 'No tokens' }); return; }
 
       const messaging = admin.messaging();
+      const safeData = {};
+      if (data && typeof data === 'object') {
+        for (const [k, v] of Object.entries(data)) safeData[k] = String(v);
+      }
       const results = await Promise.allSettled(tokens.map(t => messaging.send({
         token: t,
         notification: { title: title || 'StitchWell', body: body || '' },
-        data: data || {},
+        data: safeData,
       })));
       const ok = results.filter(r => r.status === 'fulfilled').length;
       res.status(200).json({ ok, total: tokens.length });
@@ -106,6 +134,10 @@ exports.sendPush = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+// Backward/alternate name for the same handler (matches your deployed name)
+exports.sendTestNotification = exports.sendPush;
+
 
 // Firestore trigger: push when an item is newly assigned or reassigned
 // TODO: Fix for firebase-functions v6 syntax
