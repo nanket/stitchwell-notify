@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
-import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { initFirebase } from '../firebase';
 
 // Compute push endpoint dynamically. Prefer VITE_PUSH_ENDPOINT, else derive from REGISTER_TOKEN_ENDPOINT by swapping the path to sendTestNotification.
@@ -175,6 +175,10 @@ const useStore = create(
       // Actions
       setCurrentUser: (user, role) => {
         set({ currentUser: user, currentUserRole: role });
+        // Persist to localStorage
+        try {
+          localStorage.setItem('stitchwell_user', JSON.stringify({ user, role }));
+        } catch (_) {}
         // subscribe notifications for this user and ensure backend listeners
         try {
           get().initBackendSync();
@@ -184,6 +188,28 @@ const useStore = create(
 
       logout: () => {
         set({ currentUser: null, currentUserRole: null });
+        // Clear from localStorage
+        try {
+          localStorage.removeItem('stitchwell_user');
+        } catch (_) {}
+      },
+
+      // Restore user session from localStorage
+      restoreUserSession: () => {
+        try {
+          const stored = localStorage.getItem('stitchwell_user');
+          if (stored) {
+            const { user, role } = JSON.parse(stored);
+            if (user && role) {
+              set({ currentUser: user, currentUserRole: role });
+              // Initialize backend sync and notifications
+              get().initBackendSync();
+              if (user) get()._subscribeNotifications(user);
+              return true;
+            }
+          }
+        } catch (_) {}
+        return false;
       },
 
       // Workers state and management
@@ -529,6 +555,33 @@ const useStore = create(
           });
         } catch (e) {
           // no-op
+        }
+      },
+
+      // Delete cloth item (Admin only)
+      deleteClothItem: async (itemId) => {
+        const state = get();
+        const item = state.clothItems.find(i => i.id === itemId);
+        if (!item) {
+          toast.error('Item not found!');
+          return false;
+        }
+
+        // Check if user is admin
+        if (state.currentUserRole !== USER_ROLES.ADMIN) {
+          toast.error('Only admin users can delete items!');
+          return false;
+        }
+
+        try {
+          const db = await ensureDb();
+          await deleteDoc(doc(db, 'clothItems', itemId));
+          toast.success(`Item ${item.billNumber} deleted successfully!`);
+          return true;
+        } catch (e) {
+          console.error('Delete error:', e);
+          toast.error('Failed to delete item');
+          return false;
         }
       },
 

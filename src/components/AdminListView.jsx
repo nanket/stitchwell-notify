@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Filter, ArrowUpDown, User, Package } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, User, Package, Trash2 } from 'lucide-react';
 import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
+import ConfirmDialog from './ConfirmDialog';
 
 const STATUSES = Object.values(WORKFLOW_STATES);
 const TYPES = ['Shirt', 'Pant', 'Kurta'];
@@ -19,7 +20,7 @@ const SortHeader = ({ label, sortKey, activeKey, direction, onSort }) => (
 );
 
 const AdminListView = ({ items, onAssignToTailor }) => {
-  const { completeTask, workers } = useStore();
+  const { completeTask, workers, deleteClothItem, currentUserRole } = useStore();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [type, setType] = useState('');
@@ -28,6 +29,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   const [pageSize, setPageSize] = useState(25);
   const [sortKey, setSortKey] = useState('updatedAt');
   const [sortDir, setSortDir] = useState('desc');
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, item: null });
 
   const assignees = useMemo(() => {
     const set = new Set(items.map(i => i.assignedTo).filter(Boolean));
@@ -92,6 +94,19 @@ const AdminListView = ({ items, onAssignToTailor }) => {
     } catch { return '—'; }
   };
 
+  const handleDeleteClick = (item) => {
+    setDeleteDialog({ isOpen: true, item });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteDialog.item) {
+      await deleteClothItem(deleteDialog.item.id);
+    }
+    setDeleteDialog({ isOpen: false, item: null });
+  };
+
+  const isAdmin = currentUserRole === USER_ROLES.ADMIN;
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -148,12 +163,13 @@ const AdminListView = ({ items, onAssignToTailor }) => {
               <th className="px-3 py-2 w-48"><SortHeader label="Assigned To" sortKey="assignedTo" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
               <th className="px-3 py-2 w-56"><SortHeader label="Updated" sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
               <th className="px-3 py-2 w-64">Actions</th>
+              {isAdmin && <th className="px-3 py-2 w-20">Delete</th>}
             </tr>
           </thead>
           <tbody>
             {pageItems.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-10 text-gray-500">No items found</td>
+                <td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-gray-500">No items found</td>
               </tr>
             ) : pageItems.map(item => (
               <tr key={item.id} className="border-b hover:bg-gray-50">
@@ -190,6 +206,17 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                     <span className="text-gray-400 text-xs">No action</span>
                   )}
                 </td>
+                {isAdmin && (
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => handleDeleteClick(item)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete item"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -207,6 +234,18 @@ const AdminListView = ({ items, onAssignToTailor }) => {
           <button className="btn-secondary" onClick={() => setPage(totalPages)} disabled={currentPage === totalPages}>Last</button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, item: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Item"
+        message={`Are you sure you want to delete item "${deleteDialog.item?.billNumber}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

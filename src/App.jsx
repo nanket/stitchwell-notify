@@ -8,8 +8,12 @@ import WorkerDashboard from './components/WorkerDashboard';
 import { USER_ROLES } from './store/useStore';
 
 function App() {
-  const { currentUser, currentUserRole, registerFcmToken, addNotification } = useStore();
+  const { currentUser, currentUserRole, registerFcmToken, addNotification, restoreUserSession } = useStore();
 
+  // Restore user session on app load
+  useEffect(() => {
+    restoreUserSession();
+  }, [restoreUserSession]);
 
   useEffect(() => {
     const run = async () => {
