@@ -82,7 +82,7 @@ const LoginScreen = () => {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-500">
-          <p>© 2024 StitchWell Tracking System</p>
+          <p>StitchWell Tracking System</p>
         </div>
       </div>
     </div>

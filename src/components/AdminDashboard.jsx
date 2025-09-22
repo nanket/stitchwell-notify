@@ -96,39 +96,6 @@ const AdminDashboard = () => {
                 Manage Workers
               </button>
 
-              {/* Copy FCM Token */}
-              <button
-                onClick={() => {
-                  const tokens = fcmTokens?.[currentUser] || [];
-                  const first = Array.isArray(tokens) ? tokens[0] : tokens;
-                  if (first) {
-                    navigator.clipboard?.writeText(first);
-                  }
-                }}
-                className="btn-secondary px-4 py-2"
-              >
-                Copy My FCM Token
-              </button>
-
-              {/* Test Web Push Button */}
-              <button
-                onClick={async () => {
-                  try {
-                    const { sendWebPush } = useStore.getState();
-                    await sendWebPush(
-                      currentUser,
-                      'StitchWell Test',
-                      'Web push notifications are working! 🎉'
-                    );
-                    toast.success('Web push sent!');
-                  } catch (error) {
-                    toast.error('Push failed: ' + error.message);
-                  }
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm"
-              >
-                Test Web Push
-              </button>
 
               {/* Create Item Button */}
               <button
