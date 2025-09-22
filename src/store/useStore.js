@@ -193,6 +193,35 @@ const useStore = create(
         } catch (_) {}
       },
 
+      // Simple credential-based login (username: lowercase worker name w/o spaces)
+      loginWithCredentials: (username, password) => {
+        const u = String(username || '').toLowerCase().replace(/\s+/g, '');
+        const users = {
+          admin:        { name: 'Admin', role: USER_ROLES.ADMIN,              password: 'admin1234' },
+          feroz:        { name: 'Feroz', role: USER_ROLES.CUTTING_WORKER,     password: 'feroz1234' },
+          abdul:        { name: 'Abdul', role: USER_ROLES.THREADING_WORKER,   password: 'abdul1234' },
+          salim:        { name: 'Salim', role: USER_ROLES.TAILOR,             password: 'salim1234' },
+          hanif:        { name: 'Hanif', role: USER_ROLES.TAILOR,             password: 'hanif1234' },
+          shivmuhrat:   { name: 'Shiv Muhrat', role: USER_ROLES.TAILOR,       password: 'shivmuhrat1234' },
+          lala:         { name: 'Lala', role: USER_ROLES.TAILOR,              password: 'lala1234' },
+          mama:         { name: 'Mama', role: USER_ROLES.TAILOR,              password: 'mama1234' },
+          mehboob:      { name: 'Mehboob', role: USER_ROLES.TAILOR,           password: 'mehboob1234' },
+          shambhu:      { name: 'Shambhu', role: USER_ROLES.TAILOR,           password: 'shambhu1234' },
+          abdulkadir:   { name: 'Abdul Kadir', role: USER_ROLES.IRONING_WORKER, password: 'abdulkadir1234' },
+        };
+        const entry = users[u];
+        if (!entry) {
+          toast.error('Invalid username or password');
+          return false;
+        }
+        if (String(password || '') !== entry.password) {
+          toast.error('Invalid username or password');
+          return false;
+        }
+        get().setCurrentUser(entry.name, entry.role);
+        return true;
+      },
+
       logout: () => {
         set({ currentUser: null, currentUserRole: null });
         // Clear from localStorage

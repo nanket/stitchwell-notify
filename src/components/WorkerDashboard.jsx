@@ -11,7 +11,6 @@ import {
 import useStore from '../store/useStore';
 import TaskCard from './TaskCard';
 import NotificationPanel from './NotificationPanel';
-import { toast } from 'react-hot-toast';
 
 const WorkerDashboard = () => {
   const currentUser = useStore(s => s.currentUser);
@@ -38,7 +37,7 @@ const WorkerDashboard = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-auto py-3 gap-2 flex-wrap">
             {/* Logo and Title */}
             <div className="flex items-center">
               <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
@@ -55,27 +54,7 @@ const WorkerDashboard = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center space-x-4">
-              {/* Test Web Push Button */}
-              <button
-                onClick={async () => {
-                  try {
-                    const { sendWebPush } = useStore.getState();
-                    await sendWebPush(
-                      currentUser,
-                      'StitchWell Test',
-                      'Web push notifications are working! 🎉'
-                    );
-                    toast.success('Web push sent!');
-                  } catch (error) {
-                    toast.error('Push failed: ' + error.message);
-                  }
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-              >
-                Test Push
-              </button>
-
+            <div className="flex items-center flex-wrap gap-2 sm:gap-4">
               {/* Notifications */}
               <div className="relative">
                 <button
@@ -98,18 +77,18 @@ const WorkerDashboard = () => {
               </div>
 
               {/* User Menu */}
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 truncate max-w-[140px] sm:max-w-none">
                     {currentUser}
                   </span>
                 </div>
                 <button
                   onClick={logout}
-                  className="btn-secondary px-3 py-2"
+                  className="btn-secondary px-3 py-2 whitespace-nowrap"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
+                  <LogOut className="w-4 h-4 mr-1" />
                   Logout
                 </button>
               </div>
