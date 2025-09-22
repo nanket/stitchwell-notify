@@ -45,7 +45,7 @@ const AdminDashboard = () => {
       item.status === WORKFLOW_STATES.READY
     ).length,
     pending: allItems.filter(item =>
-      item.status === WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT
+      item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT
     ).length
   };
 

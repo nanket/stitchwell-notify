@@ -3,17 +3,17 @@ import { X, UserPlus, Trash2 } from 'lucide-react';
 import useStore, { USER_ROLES } from '../store/useStore';
 
 const ROLE_ORDER = [
-  USER_ROLES.THREADING_WORKER,
   USER_ROLES.CUTTING_WORKER,
+  USER_ROLES.THREADING_WORKER, // Thread matching
   USER_ROLES.TAILOR,
-  USER_ROLES.BUTTONING_WORKER,
+  USER_ROLES.BUTTONING_WORKER, // Kaach
   USER_ROLES.IRONING_WORKER,
   USER_ROLES.PACKAGING_WORKER,
   USER_ROLES.ADMIN,
 ];
 
 const AdminManageWorkers = ({ onClose }) => {
-  const { workers, addWorker, removeWorker } = useStore();
+  const { workers, addWorker, removeWorker, setDefaultWorker } = useStore();
   const [inputs, setInputs] = useState({});
 
   const handleAdd = (role) => {
@@ -55,10 +55,22 @@ const AdminManageWorkers = ({ onClose }) => {
                   <ul className="divide-y">
                     {workers[role].map((name) => (
                       <li key={name} className="flex items-center justify-between py-2">
-                        <span className="text-gray-800">{name}</span>
-                        <button className="btn-secondary h-8 px-3 flex items-center" onClick={() => removeWorker(role, name)}>
-                          <Trash2 className="h-4 w-4 mr-1"/> Remove
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-800">{name}</span>
+                          {workers[role]?.[0] === name && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">Default</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {workers[role]?.[0] !== name && (
+                            <button className="btn-secondary h-8 px-3" onClick={() => setDefaultWorker(role, name)}>
+                              Make default
+                            </button>
+                          )}
+                          <button className="btn-secondary h-8 px-3 flex items-center" onClick={() => removeWorker(role, name)}>
+                            <Trash2 className="h-4 w-4 mr-1"/> Remove
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>

@@ -1,16 +1,11 @@
 import React from 'react';
 import { Clock, User, Package } from 'lucide-react';
-import { WORKFLOW_STATES, WORKERS, USER_ROLES } from '../store/useStore';
+import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
 
 const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
-  // Define columns for the Kanban board
+  const { workers } = useStore();
+  // Define columns for the Kanban board (updated workflow)
   const columns = [
-    {
-      id: WORKFLOW_STATES.AWAITING_THREADING,
-      title: 'Threading',
-      color: 'bg-blue-50 border-blue-200',
-      headerColor: 'bg-blue-100 text-blue-800'
-    },
     {
       id: WORKFLOW_STATES.AWAITING_CUTTING,
       title: 'Cutting',
@@ -18,8 +13,14 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
       headerColor: 'bg-yellow-100 text-yellow-800'
     },
     {
-      id: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT,
-      title: 'Stitching Assignment',
+      id: WORKFLOW_STATES.AWAITING_THREAD_MATCHING,
+      title: 'Thread Matching',
+      color: 'bg-blue-50 border-blue-200',
+      headerColor: 'bg-blue-100 text-blue-800'
+    },
+    {
+      id: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
+      title: 'Tailor Assignment',
       color: 'bg-purple-50 border-purple-200',
       headerColor: 'bg-purple-100 text-purple-800'
     },
@@ -30,16 +31,28 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
       headerColor: 'bg-orange-100 text-orange-800'
     },
     {
-      id: WORKFLOW_STATES.AWAITING_BUTTONING,
-      title: 'Buttoning',
+      id: WORKFLOW_STATES.AWAITING_KAACH,
+      title: 'Kaach',
       color: 'bg-indigo-50 border-indigo-200',
       headerColor: 'bg-indigo-100 text-indigo-800'
     },
     {
-      id: WORKFLOW_STATES.READY_FOR_IRON,
-      title: 'Ready for Iron',
+      id: WORKFLOW_STATES.AWAITING_IRONING,
+      title: 'Ironing',
       color: 'bg-green-50 border-green-200',
       headerColor: 'bg-green-100 text-green-800'
+    },
+    {
+      id: WORKFLOW_STATES.AWAITING_PACKAGING,
+      title: 'Packaging',
+      color: 'bg-fuchsia-50 border-fuchsia-200',
+      headerColor: 'bg-fuchsia-100 text-fuchsia-800'
+    },
+    {
+      id: WORKFLOW_STATES.READY,
+      title: 'Ready',
+      color: 'bg-emerald-50 border-emerald-200',
+      headerColor: 'bg-emerald-100 text-emerald-800'
     }
   ];
 
@@ -69,6 +82,8 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
         return 'bg-green-100 text-green-800';
       case 'Kurta':
         return 'bg-purple-100 text-purple-800';
+      case 'Safari':
+        return 'bg-amber-100 text-amber-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -129,7 +144,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                     </div>
 
                     {/* Admin Actions */}
-                    {isAdmin && item.status === WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT && (
+                    {isAdmin && item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <label className="block text-xs font-medium text-gray-700 mb-2">
                           Assign to Tailor:
@@ -144,7 +159,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                           defaultValue=""
                         >
                           <option value="">Select tailor...</option>
-                          {WORKERS[USER_ROLES.TAILOR].map((tailor) => (
+                          {(workers[USER_ROLES.TAILOR] || []).map((tailor) => (
                             <option key={tailor} value={tailor}>
                               {tailor}
                             </option>
@@ -159,7 +174,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                         <span className="text-xs text-gray-500">
                           Status: {item.status}
                         </span>
-                        {item.status === WORKFLOW_STATES.READY_FOR_IRON && (
+                        {item.status === WORKFLOW_STATES.READY && (
                           <div className="flex items-center space-x-1">
                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             <span className="text-xs text-green-600 font-medium">

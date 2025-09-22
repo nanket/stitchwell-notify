@@ -21,19 +21,22 @@ const TaskCard = ({ task, onComplete }) => {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'Kurta':
         return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Safari':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusColor = (status) => {
-    if (status === 'Ready') return 'text-emerald-700';
-    if (status.includes('Threading')) return 'text-blue-600';
-    if (status.includes('Cutting')) return 'text-yellow-600';
-    if (status.includes('Stitching')) return 'text-orange-600';
-    if (status.includes('Buttoning')) return 'text-indigo-600';
-    if (status.includes('Iron')) return 'text-green-600';
-    if (status.includes('Packaging')) return 'text-fuchsia-700';
+    const s = String(status || '').toLowerCase();
+    if (s === 'ready') return 'text-emerald-700';
+    if (s.includes('thread')) return 'text-blue-600';
+    if (s.includes('cutting')) return 'text-yellow-600';
+    if (s.includes('stitch')) return 'text-orange-600';
+    if (s.includes('kaach') || s.includes('button')) return 'text-indigo-600';
+    if (s.includes('iron')) return 'text-green-600';
+    if (s.includes('pack')) return 'text-fuchsia-700';
     return 'text-gray-600';
   };
 

@@ -41,13 +41,13 @@ async function seedWorkersIfEmpty(db) {
 }
 
 async function fixUnassignedItems(db, workersMap) {
-  // Auto-assign unassigned threading items to default threading worker
+  // Auto-assign unassigned thread-matching items to default threading worker
   const threadingAssignee = workersMap[USER_ROLES.THREADING_WORKER]?.[0];
   if (!threadingAssignee) return;
   try {
     const q = query(
       collection(db, 'clothItems'),
-      where('status', '==', WORKFLOW_STATES.AWAITING_THREADING),
+      where('status', '==', WORKFLOW_STATES.AWAITING_THREAD_MATCHING),
       where('assignedTo', '==', null)
     );
     const unassigned = await getDocs(q);
@@ -96,12 +96,14 @@ function toISO(v) {
 
 
 // Define the workflow states and their transitions
+// Updated to match required business flow:
+// 1) Cutting -> 2) Thread Matching -> 3) Tailor Assignment (Admin) -> 4) Tailoring -> 5) Kaach (conditional) -> 6) Ironing -> 7) Packaging -> 8) Ready
 export const WORKFLOW_STATES = {
-  AWAITING_THREADING: 'Awaiting Threading',
   AWAITING_CUTTING: 'Awaiting Cutting',
-  AWAITING_STITCHING_ASSIGNMENT: 'Awaiting Stitching Assignment',
+  AWAITING_THREAD_MATCHING: 'Awaiting Thread Matching',
+  AWAITING_TAILOR_ASSIGNMENT: 'Awaiting Tailor Assignment',
   AWAITING_STITCHING: 'Awaiting Stitching',
-  AWAITING_BUTTONING: 'Awaiting Buttoning',
+  AWAITING_KAACH: 'Awaiting Kaach',
   AWAITING_IRONING: 'Awaiting Ironing',
   AWAITING_PACKAGING: 'Awaiting Packaging',
   READY: 'Ready'
@@ -118,32 +120,37 @@ export const USER_ROLES = {
   PACKAGING_WORKER: 'Packaging Worker'
 };
 
-// Predefined workers for each role
+// Predefined workers for each role (admin can edit later from UI)
 const initialWorkers = {
   [USER_ROLES.ADMIN]: ['Admin'],
-  [USER_ROLES.THREADING_WORKER]: ['Abdul'],
   [USER_ROLES.CUTTING_WORKER]: ['Feroz'],
-  [USER_ROLES.TAILOR]: ['Tailor 1', 'Tailor 2', 'Tailor 3', 'Tailor 4'],
-  [USER_ROLES.BUTTONING_WORKER]: ['Abdul'],
-  [USER_ROLES.IRONING_WORKER]: ['Dinesh'],
-  [USER_ROLES.PACKAGING_WORKER]: ['Dinesh']
+  [USER_ROLES.THREADING_WORKER]: ['Abdul'], // Thread matching
+  [USER_ROLES.TAILOR]: ['Salim', 'Hanif', 'Shiv Muhrat', 'Lala', 'Mama', 'Mehboob', 'Shambhu'],
+  [USER_ROLES.BUTTONING_WORKER]: ['Abdul'], // Kaach
+  [USER_ROLES.IRONING_WORKER]: ['Abdul Kadir'],
+  [USER_ROLES.PACKAGING_WORKER]: ['Abdul Kadir']
 };
 
 // Define cloth types
-export const CLOTH_TYPES = ['Shirt', 'Pant', 'Kurta'];
+export const CLOTH_TYPES = ['Shirt', 'Pant', 'Kurta', 'Safari'];
 
-// Compute next transition dynamically using current workers
-const computeNextTransition = (status, workers) => {
+// Compute next transition dynamically using current workers and item type
+const computeNextTransition = (item, workers) => {
+  const status = item.status;
+  const type = (item.type || '').toLowerCase();
   switch (status) {
-    case WORKFLOW_STATES.AWAITING_THREADING:
-      return { nextState: WORKFLOW_STATES.AWAITING_CUTTING, assignedTo: workers[USER_ROLES.CUTTING_WORKER]?.[0] || null };
     case WORKFLOW_STATES.AWAITING_CUTTING:
-      return { nextState: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT, assignedTo: workers[USER_ROLES.ADMIN]?.[0] || null };
-    case WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT:
-      return { nextState: WORKFLOW_STATES.AWAITING_STITCHING, assignedTo: null }; // tailor already chosen by admin
+      return { nextState: WORKFLOW_STATES.AWAITING_THREAD_MATCHING, assignedTo: workers[USER_ROLES.THREADING_WORKER]?.[0] || null };
+    case WORKFLOW_STATES.AWAITING_THREAD_MATCHING:
+      return { nextState: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT, assignedTo: workers[USER_ROLES.ADMIN]?.[0] || null };
+    case WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT:
+      return { nextState: WORKFLOW_STATES.AWAITING_STITCHING, assignedTo: item.assignedTo || null }; // tailor should already be selected
     case WORKFLOW_STATES.AWAITING_STITCHING:
-      return { nextState: WORKFLOW_STATES.AWAITING_BUTTONING, assignedTo: workers[USER_ROLES.BUTTONING_WORKER]?.[0] || null };
-    case WORKFLOW_STATES.AWAITING_BUTTONING:
+      if (type === 'pant') {
+        return { nextState: WORKFLOW_STATES.AWAITING_IRONING, assignedTo: workers[USER_ROLES.IRONING_WORKER]?.[0] || null };
+      }
+      return { nextState: WORKFLOW_STATES.AWAITING_KAACH, assignedTo: workers[USER_ROLES.BUTTONING_WORKER]?.[0] || null };
+    case WORKFLOW_STATES.AWAITING_KAACH:
       return { nextState: WORKFLOW_STATES.AWAITING_IRONING, assignedTo: workers[USER_ROLES.IRONING_WORKER]?.[0] || null };
     case WORKFLOW_STATES.AWAITING_IRONING:
       return { nextState: WORKFLOW_STATES.AWAITING_PACKAGING, assignedTo: workers[USER_ROLES.PACKAGING_WORKER]?.[0] || null };
@@ -233,6 +240,18 @@ const useStore = create(
           toast.error('Failed to remove worker');
         }
       },
+      // Make a worker the default for a role by moving them to the front of the list
+      setDefaultWorker: async (role, name) => {
+        try {
+          const db = await ensureDb();
+          const current = get().workers?.[role] || [];
+          const next = [name, ...current.filter(n => n !== name)];
+          await setDoc(doc(db, 'workers', role), { list: next, updatedAt: serverTimestamp() }, { merge: true });
+          toast.success(`${name} is now default for ${role}`);
+        } catch (e) {
+          toast.error('Failed to set default worker');
+        }
+      },
 
       // FCM token registry (client-side persisted)
       fcmTokens: persistedFcmTokens,
@@ -264,27 +283,27 @@ const useStore = create(
         try {
           const db = await ensureDb();
           const workers = get().workers;
-          const threadingAssignee = workers[USER_ROLES.THREADING_WORKER]?.[0] || null;
+          const cuttingAssignee = workers[USER_ROLES.CUTTING_WORKER]?.[0] || null;
           const payload = {
             type,
             billNumber,
-            status: WORKFLOW_STATES.AWAITING_THREADING,
-            assignedTo: threadingAssignee,
+            status: WORKFLOW_STATES.AWAITING_CUTTING,
+            assignedTo: cuttingAssignee,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             history: [{
-              status: WORKFLOW_STATES.AWAITING_THREADING,
-              assignedTo: threadingAssignee,
+              status: WORKFLOW_STATES.AWAITING_CUTTING,
+              assignedTo: cuttingAssignee,
               timestamp: new Date().toISOString(),
               action: 'Item created'
             }]
           };
           const ref = await addDoc(collection(db, 'clothItems'), payload);
           // Push notification via backend
-          if (threadingAssignee) {
+          if (cuttingAssignee) {
             get().addNotification(
-              threadingAssignee,
-              `New ${type} item (${billNumber}) has been assigned to you for threading.`
+              cuttingAssignee,
+              `New ${type} item (${billNumber}) has been assigned to you for cutting.`
             );
           }
           toast.success(`${type} item created successfully!`);
@@ -300,7 +319,7 @@ const useStore = create(
         const item = state.clothItems.find(i => i.id === itemId);
         if (!item) { toast.error('Item not found!'); return; }
 
-        const transition = computeNextTransition(item.status, state.workers);
+        const transition = computeNextTransition(item, state.workers);
         if (!transition) { toast.error('No valid transition available!'); return; }
 
         try {
@@ -334,18 +353,21 @@ const useStore = create(
         if (!item) { toast.error('Item not found!'); return; }
         try {
           const db = await ensureDb();
+          const isTailorAssignment = item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT;
+          const nextStatus = isTailorAssignment ? WORKFLOW_STATES.AWAITING_STITCHING : item.status;
           const newHistory = [
             ...item.history,
-            { status: item.status, assignedTo: workerName, timestamp: new Date().toISOString(), action: `Assigned to ${workerName}` }
+            { status: nextStatus, assignedTo: workerName, timestamp: new Date().toISOString(), action: `Assigned to ${workerName}` }
           ];
           await updateDoc(doc(db, 'clothItems', itemId), {
+            status: nextStatus,
             assignedTo: workerName,
             updatedAt: serverTimestamp(),
             history: newHistory
           });
           get().addNotification(
             workerName,
-            `Item ${item.billNumber} (${item.type}) has been assigned to you for ${item.status.toLowerCase()}.`
+            `Item ${item.billNumber} (${item.type}) has been assigned to you for ${nextStatus.toLowerCase()}.`
           );
           toast.success(`Item assigned to ${workerName}!`);
         } catch (e) {

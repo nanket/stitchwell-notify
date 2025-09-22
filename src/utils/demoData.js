@@ -6,13 +6,13 @@ export const DEMO_ITEMS = [
     id: 'demo-1',
     type: 'Shirt',
     billNumber: 'SH001',
-    status: WORKFLOW_STATES.AWAITING_THREADING,
-    assignedTo: 'Abdul',
+    status: WORKFLOW_STATES.AWAITING_CUTTING,
+    assignedTo: 'Feroz',
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     history: [{
-      status: WORKFLOW_STATES.AWAITING_THREADING,
-      assignedTo: 'Abdul',
+      status: WORKFLOW_STATES.AWAITING_CUTTING,
+      assignedTo: 'Feroz',
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       action: 'Item created'
     }]
@@ -27,8 +27,8 @@ export const DEMO_ITEMS = [
     updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
     history: [
       {
-        status: WORKFLOW_STATES.AWAITING_THREADING,
-        assignedTo: 'Abdul',
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
         action: 'Item created'
       },
@@ -44,14 +44,14 @@ export const DEMO_ITEMS = [
     id: 'demo-3',
     type: 'Kurta',
     billNumber: 'KT003',
-    status: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT,
+    status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
     assignedTo: 'Gaju',
     createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
     updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
     history: [
       {
-        status: WORKFLOW_STATES.AWAITING_THREADING,
-        assignedTo: 'Abdul',
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
         action: 'Item created'
       },
@@ -62,7 +62,7 @@ export const DEMO_ITEMS = [
         action: 'Completed Awaiting Threading'
       },
       {
-        status: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT,
+        status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Cutting'
@@ -79,8 +79,8 @@ export const DEMO_ITEMS = [
     updatedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
     history: [
       {
-        status: WORKFLOW_STATES.AWAITING_THREADING,
-        assignedTo: 'Abdul',
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
         action: 'Item created'
       },
@@ -91,7 +91,7 @@ export const DEMO_ITEMS = [
         action: 'Completed Awaiting Threading'
       },
       {
-        status: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT,
+        status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Cutting'
@@ -108,14 +108,14 @@ export const DEMO_ITEMS = [
     id: 'demo-5',
     type: 'Pant',
     billNumber: 'PT005',
-    status: WORKFLOW_STATES.AWAITING_BUTTONING,
-    assignedTo: 'Abdul',
+    status: WORKFLOW_STATES.AWAITING_IRONING,
+    assignedTo: 'Abdul Kadir',
     createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
     updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
     history: [
       {
-        status: WORKFLOW_STATES.AWAITING_THREADING,
-        assignedTo: 'Abdul',
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
         action: 'Item created'
       },
@@ -126,7 +126,7 @@ export const DEMO_ITEMS = [
         action: 'Completed Awaiting Threading'
       },
       {
-        status: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT,
+        status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Cutting'
@@ -138,7 +138,7 @@ export const DEMO_ITEMS = [
         action: 'Assigned to Tailor 2'
       },
       {
-        status: WORKFLOW_STATES.AWAITING_BUTTONING,
+        status: WORKFLOW_STATES.AWAITING_KAACH,
         assignedTo: 'Abdul',
         timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Stitching'
@@ -149,14 +149,14 @@ export const DEMO_ITEMS = [
     id: 'demo-6',
     type: 'Kurta',
     billNumber: 'KT006',
-    status: WORKFLOW_STATES.READY_FOR_IRON,
+    status: WORKFLOW_STATES.AWAITING_IRONING,
     assignedTo: null,
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 24 hours ago
     updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
     history: [
       {
-        status: WORKFLOW_STATES.AWAITING_THREADING,
-        assignedTo: 'Abdul',
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         action: 'Item created'
       },
@@ -167,7 +167,7 @@ export const DEMO_ITEMS = [
         action: 'Completed Awaiting Threading'
       },
       {
-        status: WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT,
+        status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Cutting'
@@ -179,13 +179,13 @@ export const DEMO_ITEMS = [
         action: 'Assigned to Tailor 3'
       },
       {
-        status: WORKFLOW_STATES.AWAITING_BUTTONING,
+        status: WORKFLOW_STATES.AWAITING_KAACH,
         assignedTo: 'Abdul',
         timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Stitching'
       },
       {
-        status: WORKFLOW_STATES.READY_FOR_IRON,
+        status: WORKFLOW_STATES.AWAITING_IRONING,
         assignedTo: null,
         timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
         action: 'Completed Awaiting Buttoning'

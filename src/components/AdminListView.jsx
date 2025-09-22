@@ -4,7 +4,7 @@ import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
 import ConfirmDialog from './ConfirmDialog';
 
 const STATUSES = Object.values(WORKFLOW_STATES);
-const TYPES = ['Shirt', 'Pant', 'Kurta'];
+const TYPES = ['Shirt', 'Pant', 'Kurta', 'Safari'];
 
 const SortHeader = ({ label, sortKey, activeKey, direction, onSort }) => (
   <button
@@ -20,7 +20,7 @@ const SortHeader = ({ label, sortKey, activeKey, direction, onSort }) => (
 );
 
 const AdminListView = ({ items, onAssignToTailor }) => {
-  const { completeTask, workers, deleteClothItem, currentUserRole } = useStore();
+  const { completeTask, workers, deleteClothItem, currentUserRole, assignItemToWorker } = useStore();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [type, setType] = useState('');
@@ -35,6 +35,14 @@ const AdminListView = ({ items, onAssignToTailor }) => {
     const set = new Set(items.map(i => i.assignedTo).filter(Boolean));
     return Array.from(set);
   }, [items]);
+
+  const allWorkers = useMemo(() => {
+    try {
+      return Array.from(new Set(Object.values(workers || {}).flat()));
+    } catch {
+      return [];
+    }
+  }, [workers]);
 
   const handleSort = (key) => {
     if (key === sortKey) {
@@ -189,7 +197,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                 </td>
                 <td className="px-3 py-2 text-gray-600">{formatDate(item.updatedAt)}</td>
                 <td className="px-3 py-2">
-                  {item.status === WORKFLOW_STATES.AWAITING_STITCHING_ASSIGNMENT ? (
+                  {item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT ? (
                     <div className="flex items-center gap-2">
                       <select
                         defaultValue=""
@@ -205,6 +213,19 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                   ) : (
                     <span className="text-gray-400 text-xs">No action</span>
                   )}
+                  {/* Override assignment (Admin can reassign anytime) */}
+                  <div className="mt-2">
+                    <select
+                      defaultValue=""
+                      onChange={(e) => e.target.value && assignItemToWorker(item.id, e.target.value)}
+                      className="select w-44"
+                    >
+                      <option value="">Override assign...</option>
+                      {allWorkers.map(w => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
+                    </select>
+                  </div>
                 </td>
                 {isAdmin && (
                   <td className="px-3 py-2">
