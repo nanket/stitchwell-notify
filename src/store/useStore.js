@@ -222,7 +222,20 @@ const useStore = create(
         return true;
       },
 
-      logout: () => {
+      logout: async () => {
+        try {
+          const prevUser = get().currentUser;
+          if (prevUser) {
+            // Attempt to fetch current device token and unregister from previous user
+            const { getFcmToken } = await import('../firebase');
+            const token = await getFcmToken();
+            if (token) {
+              await get().unregisterFcmToken(prevUser, token);
+            }
+          }
+        } catch (e) {
+          // best-effort cleanup
+        }
         set({ currentUser: null, currentUserRole: null });
         // Clear from localStorage
         try {
@@ -293,7 +306,6 @@ const useStore = create(
           try { localStorage.setItem('fcmTokens', JSON.stringify(updated)); } catch (_) {}
           return { fcmTokens: updated };
         });
-        // Write to Firestore as the source of truth (ensures fcmTokens collection exists)
         try {
           const db = await ensureDb();
           await setDoc(doc(db, 'fcmTokens', userName), {
@@ -303,8 +315,30 @@ const useStore = create(
         } catch (e) {
           // best-effort, backend will also attempt to store
         }
-        // Skip problematic Cloud Function for now - Firestore direct write above is sufficient
         console.log('FCM token registered successfully via Firestore:', { userName, tokenLength: token?.length });
+      },
+
+      unregisterFcmToken: async (userName, token) => {
+        if (!userName || !token) return;
+        // Update local cache
+        set((state) => {
+          const list = state.fcmTokens[userName] || [];
+          const next = list.filter((t) => t !== token);
+          const updated = { ...state.fcmTokens, [userName]: next };
+          try { localStorage.setItem('fcmTokens', JSON.stringify(updated)); } catch (_) {}
+          return { fcmTokens: updated };
+        });
+        // Update Firestore
+        try {
+          const db = await ensureDb();
+          await setDoc(doc(db, 'fcmTokens', userName), {
+            tokens: arrayRemove(token),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (e) {
+          // best-effort
+        }
+        console.log('FCM token unregistered for user:', { userName, tokenSuffix: token?.slice?.(-8) });
       },
 
       // Create new cloth item (Admin only)
