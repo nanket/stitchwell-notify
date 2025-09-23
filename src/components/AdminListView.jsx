@@ -133,28 +133,28 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Status</label>
-          <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="select mt-1 w-52">
+          <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="select mt-1 w-full md:w-52">
             <option value="">All</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Type</label>
-          <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className="select mt-1 w-40">
+          <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className="select mt-1 w-full md:w-40">
             <option value="">All</option>
             {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Assignee</label>
-          <select value={assignee} onChange={(e) => { setAssignee(e.target.value); setPage(1); }} className="select mt-1 w-48">
+          <select value={assignee} onChange={(e) => { setAssignee(e.target.value); setPage(1); }} className="select mt-1 w-full md:w-48">
             <option value="">All</option>
             {assignees.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700">Page size</label>
-          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="select mt-1 w-28">
+          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="select mt-1 w-full md:w-28">
             {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
@@ -162,7 +162,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
 
       {/* Table */}
       <div className="overflow-x-auto border rounded-lg">
-        <table className="min-w-[900px] text-sm">
+        <table className="min-w-[900px] text-xs sm:text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr className="border-b">
               <th className="px-3 py-2 w-36"><SortHeader label="Bill #" sortKey="billNumber" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
@@ -202,7 +202,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                       <select
                         defaultValue=""
                         onChange={(e) => e.target.value && onAssignToTailor(item.id, e.target.value)}
-                        className="select w-44"
+                        className="select w-full md:w-44"
                       >
                         <option value="">Assign tailor...</option>
                         {(workers[USER_ROLES.TAILOR] || []).map(t => (
@@ -218,7 +218,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                     <select
                       defaultValue=""
                       onChange={(e) => e.target.value && assignItemToWorker(item.id, e.target.value)}
-                      className="select w-44"
+                      className="select w-full md:w-44"
                     >
                       <option value="">Override assign...</option>
                       {allWorkers.map(w => (
