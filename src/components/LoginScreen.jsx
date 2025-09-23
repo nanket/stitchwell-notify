@@ -54,7 +54,6 @@ const LoginScreen = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={t('auth.username_placeholder')}
                 className="input w-full"
                 autoComplete="username"
                 required
@@ -74,7 +73,7 @@ const LoginScreen = () => {
                 />
                 <Lock className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
-              <p className="text-xs text-gray-500 mt-1">{t('auth.password_hint')}</p>
+            
             </div>
           </div>
 
