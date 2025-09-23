@@ -51,12 +51,14 @@ self.addEventListener('fetch', (event) => {
 // Handle background messages from FCM
 if (messaging) {
   messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title || 'StitchWell';
+    const title = payload.notification?.title || payload.data?.title || 'StitchWell';
+    const body = payload.notification?.body || payload.data?.body || 'You have a new task update';
+    const url = payload.data?.url || payload.fcmOptions?.link || '/';
     const options = {
-      body: payload.notification?.body || 'You have a new task update',
+      body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: payload.fcmOptions?.link || '/',
+      data: url,
       tag: 'stitchwell',
       requireInteraction: false
     };
@@ -68,14 +70,17 @@ if (messaging) {
 self.addEventListener('push', (event) => {
   try {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || 'StitchWell';
+    const title = data.notification?.title || data.title || 'StitchWell';
+    const body = data.notification?.body || data.body || 'You have a new task update';
+    const url = (data.data && (data.data.url || data.data.link)) || data.url || (data.fcmOptions && data.fcmOptions.link) || '/';
     const options = {
-      body: data.body || 'You have a new task update',
+      body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: data.url || '/',
+      data: url,
       tag: data.tag || 'stitchwell'
     };
+    console.log('[FCM] Received push payload:', data);
     event.waitUntil(self.registration.showNotification(title, options));
   } catch (e) {
     event.waitUntil(self.registration.showNotification('StitchWell', { body: 'You have a new update' }));

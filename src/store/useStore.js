@@ -109,6 +109,22 @@ export const WORKFLOW_STATES = {
   READY: 'Ready'
 };
 
+// Friendly stage label from status constant
+function stageFromStatus(status) {
+  switch (status) {
+    case WORKFLOW_STATES.AWAITING_CUTTING: return 'cutting';
+    case WORKFLOW_STATES.AWAITING_THREAD_MATCHING: return 'thread matching';
+    case WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT: return 'tailor assignment';
+    case WORKFLOW_STATES.AWAITING_STITCHING: return 'stitching';
+    case WORKFLOW_STATES.AWAITING_KAACH: return 'kaach';
+    case WORKFLOW_STATES.AWAITING_IRONING: return 'ironing';
+    case WORKFLOW_STATES.AWAITING_PACKAGING: return 'packaging';
+    case WORKFLOW_STATES.READY: return 'ready';
+    default: return String(status || '').toLowerCase();
+  }
+}
+
+
 // Define user roles and their assigned workers
 export const USER_ROLES = {
   ADMIN: 'Admin',
@@ -364,10 +380,10 @@ const useStore = create(
           const ref = await addDoc(collection(db, 'clothItems'), payload);
           // Push notification via backend
           if (cuttingAssignee) {
-            get().addNotification(
-              cuttingAssignee,
-              `New ${type} item (${billNumber}) has been assigned to you for cutting.`
-            );
+            const typeLabel = String(type || '').charAt(0).toUpperCase() + String(type || '').slice(1).toLowerCase();
+            const title = `New task: Bill #${billNumber} (${typeLabel})`;
+            const message = `New task: Bill #${billNumber} (${typeLabel}) assigned for cutting`;
+            get().addNotification(cuttingAssignee, message, title);
           }
           toast.success(`${type} item created successfully!`);
           return { id: ref.id, ...payload };
@@ -398,10 +414,11 @@ const useStore = create(
             history: newHistory
           });
           if (transition.assignedTo) {
-            get().addNotification(
-              transition.assignedTo,
-              `Item ${item.billNumber} (${item.type}) has been assigned to you for ${transition.nextState.toLowerCase()}.`
-            );
+            const typeLabel = String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase();
+            const nextStage = stageFromStatus(transition.nextState);
+            const title = `Task completed: Bill #${item.billNumber} (${typeLabel})`;
+            const message = `Task completed: Bill #${item.billNumber} (${typeLabel}) ready for ${nextStage}`;
+            get().addNotification(transition.assignedTo, message, title);
           }
           toast.success(`Task completed! Item moved to ${transition.nextState}`);
         } catch (e) {
@@ -428,10 +445,13 @@ const useStore = create(
             updatedAt: serverTimestamp(),
             history: newHistory
           });
-          get().addNotification(
-            workerName,
-            `Item ${item.billNumber} (${item.type}) has been assigned to you for ${nextStatus.toLowerCase()}.`
-          );
+          {
+            const typeLabel = String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase();
+            const stage = stageFromStatus(nextStatus);
+            const title = `New task: Bill #${item.billNumber} (${typeLabel})`;
+            const message = `New task: Bill #${item.billNumber} (${typeLabel}) assigned for ${stage}`;
+            get().addNotification(workerName, message, title);
+          }
           toast.success(`Item assigned to ${workerName}!`);
         } catch (e) {
           toast.error('Failed to assign item');
@@ -486,7 +506,7 @@ const useStore = create(
       },
 
       // Add notification for a specific user (also triggers FCM push)
-      addNotification: async (userName, message) => {
+      addNotification: async (userName, message, title) => {
         const notif = { userName, message, timestamp: new Date().toISOString(), read: false };
         set(state => ({ notifications: [notif, ...state.notifications] }));
 
@@ -516,17 +536,18 @@ const useStore = create(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userName,
-              title: 'StitchWell - New Task',
-              body: message,
+              title: title || message || 'StitchWell Task',
+              body: message || 'You have a new task update',
               data: {
                 url: '/',
                 timestamp: new Date().toISOString()
               }
             })
           });
+          console.log('Push response:', response);
 
           if (!response.ok) {
-            const qs = new URLSearchParams({ userName, title: 'StitchWell - New Task', body: message });
+            const qs = new URLSearchParams({ userName, title: title || message || 'StitchWell Task', body: message || 'You have a new task update' });
             try {
               response = await fetch(`${PUSH_ENDPOINT}?${qs.toString()}`, { method: 'GET' });
             } catch (_) {}
