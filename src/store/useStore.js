@@ -790,8 +790,20 @@ const useStore = create(
                 timestamp: toISO(data.timestamp) || data.timestamp || null
               };
             });
-            
-            set({ notifications: firestoreNotifications });
+
+            // Merge with local state to preserve optimistic "read" flags until server confirms
+            set((state) => {
+              const prevById = {};
+              (state.notifications || []).forEach((n) => { if (n && n.id) prevById[n.id] = n; });
+              const merged = firestoreNotifications.map((n) => {
+                const prev = prevById[n.id];
+                if (prev && prev.read === true && (n.read === false || typeof n.read === 'undefined')) {
+                  return { ...n, read: true };
+                }
+                return n;
+              });
+              return { notifications: merged };
+            });
           });
         } catch (e) {
           console.error('Error subscribing to notifications:', e);

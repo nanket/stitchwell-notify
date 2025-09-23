@@ -29,6 +29,8 @@ const AdminDashboard = () => {
   const getAllItems = useStore(s => s.getAllItems);
   const assignItemToWorker = useStore(s => s.assignItemToWorker);
   const notifications = useStore(s => s.notifications);
+  const markAllMyNotificationsAsRead = useStore(s => s.markAllMyNotificationsAsRead);
+
   const { t } = useI18n();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -104,7 +106,7 @@ const AdminDashboard = () => {
               {/* Notifications (mobile) */}
               <div className="relative">
                 <button
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(v => !v); }}
                   className="relative p-2 touch-target text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg"
                   aria-label="Notifications"
                 >
@@ -165,7 +167,7 @@ const AdminDashboard = () => {
               {/* Notifications */}
               <div className="relative">
                 <button
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(v => !v); }}
                   className="relative p-3 touch-target text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg"
                 >
                   <Bell className="h-6 w-6" />
@@ -216,7 +218,7 @@ const AdminDashboard = () => {
               <LanguageSwitcher />
             </div>
 
-            <button onClick={() => { setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
+            <button onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
               <Bell className="w-4 h-4 mr-2" /> {t('notif_panel.title')}
               {unreadCount > 0 && (
                 <span className="absolute right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">{unreadCount}</span>

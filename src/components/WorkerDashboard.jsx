@@ -23,6 +23,8 @@ const WorkerDashboard = () => {
   const completeTask = useStore(s => s.completeTask);
   const clothItems = useStore(s => s.clothItems);
   const notifications = useStore(s => s.notifications);
+  const markAllMyNotificationsAsRead = useStore(s => s.markAllMyNotificationsAsRead);
+
   const { t } = useI18n();
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -71,7 +73,7 @@ const WorkerDashboard = () => {
               {/* Notifications (mobile) */}
               <div className="relative">
                 <button
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(v => !v); }}
                   className="relative p-2 touch-target text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg"
                   aria-label="Notifications"
                 >
@@ -108,7 +110,7 @@ const WorkerDashboard = () => {
               {/* Notifications */}
               <div className="relative">
                 <button
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(v => !v); }}
                   className="relative p-3 touch-target text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg"
                 >
                   <Bell className="h-6 w-6" />
@@ -154,7 +156,7 @@ const WorkerDashboard = () => {
         <nav id="worker-mobile-menu" aria-label="Mobile menu" className="md:hidden bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
             <div className="relative">
-              <button onClick={() => { setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
+              <button onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
                 <Bell className="w-4 h-4 mr-2" /> {t('notif_panel.title')}
                 {unreadCount > 0 && (
                   <span className="absolute right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">{unreadCount}</span>
