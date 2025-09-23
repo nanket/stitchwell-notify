@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from '../i18n';
 import { 
   Package, 
   Clock, 
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 
 const TaskCard = ({ task, onComplete }) => {
+  const { t, trStatus, trType } = useI18n();
   const [showHistory, setShowHistory] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -74,15 +76,15 @@ const TaskCard = ({ task, onComplete }) => {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">
-                Bill #{task.billNumber}
+                {t('card.bill')}: {task.billNumber}
               </h3>
               <p className="text-sm text-gray-600">
-                {task.type} Item
+                {trType(task.type)}
               </p>
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(task.type)}`}>
-            {task.type}
+            {trType(task.type)}
           </span>
         </div>
 
@@ -91,21 +93,21 @@ const TaskCard = ({ task, onComplete }) => {
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
             <span className={`text-sm font-medium ${getStatusColor(task.status)}`}>
-              {task.status}
+              {trStatus(task.status)}
             </span>
           </div>
           
           <div className="flex items-center space-x-2">
             <User className="h-4 w-4 text-gray-400" />
             <span className="text-sm text-gray-600">
-              Assigned to: {task.assignedTo}
+              {t('table.assigned_to')}: {task.assignedTo}
             </span>
           </div>
 
           <div className="flex items-center space-x-2">
             <Clock className="h-4 w-4 text-gray-400" />
             <span className="text-sm text-gray-500">
-              Updated: {formatDate(task.updatedAt)}
+              {t('table.updated')}: {formatDate(task.updatedAt)}
             </span>
           </div>
         </div>
@@ -117,7 +119,7 @@ const TaskCard = ({ task, onComplete }) => {
             className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
           >
             <History className="h-4 w-4" />
-            <span>History</span>
+            <span>{t('card.history')}</span>
             {showHistory ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -133,12 +135,12 @@ const TaskCard = ({ task, onComplete }) => {
             {isCompleting ? (
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Completing...</span>
+                <span>{t('card.completing')}</span>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-4 w-4" />
-                <span>Mark Complete</span>
+                <span>{t('card.mark_complete')}</span>
               </div>
             )}
           </button>
@@ -149,7 +151,7 @@ const TaskCard = ({ task, onComplete }) => {
       {showHistory && (
         <div className="border-t border-gray-100 bg-gray-50 p-6">
           <h4 className="text-sm font-medium text-gray-900 mb-3">
-            Task History
+            {t('card.task_history')}
           </h4>
           <div className="space-y-3">
             {task.history.map((entry, index) => (
@@ -166,11 +168,11 @@ const TaskCard = ({ task, onComplete }) => {
                   </div>
                   <div className="flex items-center space-x-4 mt-1">
                     <span className="text-xs text-gray-600">
-                      Status: {entry.status}
+                      {t('table.status')}: {trStatus(entry.status)}
                     </span>
                     {entry.assignedTo && (
                       <span className="text-xs text-gray-600">
-                        Assigned: {entry.assignedTo}
+                        {t('table.assigned_to')}: {entry.assignedTo}
                       </span>
                     )}
                   </div>

@@ -16,6 +16,9 @@ import CreateItemModal from './CreateItemModal';
 import NotificationPanel from './NotificationPanel';
 import AdminManageWorkers from './AdminManageWorkers';
 import { loadDemoData } from '../utils/demoData';
+import { useI18n } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher';
+import MonthlyCompletionCard from './MonthlyCompletionCard';
 
 const AdminDashboard = () => {
   const {
@@ -23,14 +26,14 @@ const AdminDashboard = () => {
     logout,
     getAllItems,
     getMyNotifications,
-    assignItemToWorker,
-    fcmTokens
+    assignItemToWorker
   } = useStore();
-  
+  const { t } = useI18n();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showManageWorkers, setShowManageWorkers] = useState(false);
-  
+
   const allItems = getAllItems();
   const notifications = getMyNotifications();
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -70,10 +73,10 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
-                  StitchWell Admin
+                  {t('admin.title')}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Workflow Management Dashboard
+                  {t('admin.subtitle')}
                 </p>
               </div>
             </div>
@@ -87,14 +90,16 @@ const AdminDashboard = () => {
                   className="btn-secondary px-4 py-2"
                 >
                   <Database className="w-4 h-4 mr-2" />
-                  Load Demo Data
+                  {t('admin.load_demo')}
                 </button>
               )}
 
               {/* Manage Workers */}
               <button onClick={() => setShowManageWorkers(true)} className="btn-secondary px-4 py-2">
-                Manage Workers
+                {t('admin.manage_workers')}
               </button>
+
+              <LanguageSwitcher />
 
 
               {/* Create Item Button */}
@@ -103,7 +108,7 @@ const AdminDashboard = () => {
                 className="btn-primary px-4 py-2"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Item
+                {t('admin.new_item')}
               </button>
 
               {/* Notifications */}
@@ -119,9 +124,9 @@ const AdminDashboard = () => {
                     </span>
                   )}
                 </button>
-                
+
                 {showNotifications && (
-                  <NotificationPanel 
+                  <NotificationPanel
                     onClose={() => setShowNotifications(false)}
                   />
                 )}
@@ -140,7 +145,7 @@ const AdminDashboard = () => {
                   className="btn-secondary px-3 py-2"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  {t('common.logout')}
                 </button>
               </div>
             </div>
@@ -157,7 +162,7 @@ const AdminDashboard = () => {
                 <Scissors className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Items</p>
+                <p className="text-sm font-medium text-gray-600">{t('admin.stats_total')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
               </div>
             </div>
@@ -169,7 +174,7 @@ const AdminDashboard = () => {
                 <Clock className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-sm font-medium text-gray-600">{t('admin.stats_in_progress')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.inProgress}</p>
               </div>
             </div>
@@ -181,7 +186,7 @@ const AdminDashboard = () => {
                 <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-sm font-medium text-gray-600">{t('admin.stats_completed')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.completed}</p>
               </div>
             </div>
@@ -193,10 +198,12 @@ const AdminDashboard = () => {
                 <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending Assignment</p>
+                <p className="text-sm font-medium text-gray-600">{t('admin.stats_pending')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.pending}</p>
               </div>
             </div>
+
+          <MonthlyCompletionCard />
           </div>
         </div>
 
@@ -204,10 +211,10 @@ const AdminDashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Workflow Items (Table View)
+              {t('admin.table_title')}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Filter, sort and paginate items for large datasets
+              {t('admin.table_subtitle')}
             </p>
           </div>
           <div className="p-6">

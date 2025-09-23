@@ -1,56 +1,58 @@
 import React from 'react';
 import { Clock, User, Package } from 'lucide-react';
 import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
+import { useI18n } from '../i18n';
 
 const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
+  const { t, trStatus, trType } = useI18n();
   const { workers } = useStore();
   // Define columns for the Kanban board (updated workflow)
   const columns = [
     {
       id: WORKFLOW_STATES.AWAITING_CUTTING,
-      title: 'Cutting',
+      title: trStatus(WORKFLOW_STATES.AWAITING_CUTTING),
       color: 'bg-yellow-50 border-yellow-200',
       headerColor: 'bg-yellow-100 text-yellow-800'
     },
     {
       id: WORKFLOW_STATES.AWAITING_THREAD_MATCHING,
-      title: 'Thread Matching',
+      title: trStatus(WORKFLOW_STATES.AWAITING_THREAD_MATCHING),
       color: 'bg-blue-50 border-blue-200',
       headerColor: 'bg-blue-100 text-blue-800'
     },
     {
       id: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
-      title: 'Tailor Assignment',
+      title: trStatus(WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT),
       color: 'bg-purple-50 border-purple-200',
       headerColor: 'bg-purple-100 text-purple-800'
     },
     {
       id: WORKFLOW_STATES.AWAITING_STITCHING,
-      title: 'Stitching',
+      title: trStatus(WORKFLOW_STATES.AWAITING_STITCHING),
       color: 'bg-orange-50 border-orange-200',
       headerColor: 'bg-orange-100 text-orange-800'
     },
     {
       id: WORKFLOW_STATES.AWAITING_KAACH,
-      title: 'Kaach',
+      title: trStatus(WORKFLOW_STATES.AWAITING_KAACH),
       color: 'bg-indigo-50 border-indigo-200',
       headerColor: 'bg-indigo-100 text-indigo-800'
     },
     {
       id: WORKFLOW_STATES.AWAITING_IRONING,
-      title: 'Ironing',
+      title: trStatus(WORKFLOW_STATES.AWAITING_IRONING),
       color: 'bg-green-50 border-green-200',
       headerColor: 'bg-green-100 text-green-800'
     },
     {
       id: WORKFLOW_STATES.AWAITING_PACKAGING,
-      title: 'Packaging',
+      title: trStatus(WORKFLOW_STATES.AWAITING_PACKAGING),
       color: 'bg-fuchsia-50 border-fuchsia-200',
       headerColor: 'bg-fuchsia-100 text-fuchsia-800'
     },
     {
       id: WORKFLOW_STATES.READY,
-      title: 'Ready',
+      title: trStatus(WORKFLOW_STATES.READY),
       color: 'bg-emerald-50 border-emerald-200',
       headerColor: 'bg-emerald-100 text-emerald-800'
     }
@@ -123,7 +125,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                         </span>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(item.type)}`}>
-                        {item.type}
+                        {trType(item.type)}
                       </span>
                     </div>
 
@@ -131,7 +133,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                     <div className="flex items-center space-x-2 mb-3">
                       <User className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {item.assignedTo || 'Unassigned'}
+                        {item.assignedTo || t('kanban.unassigned')}
                       </span>
                     </div>
 
@@ -139,7 +141,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                     <div className="flex items-center space-x-2 mb-3">
                       <Clock className="h-4 w-4 text-gray-400" />
                       <span className="text-xs text-gray-500">
-                        Updated: {formatDate(item.updatedAt)}
+                        {t('table.updated')}: {formatDate(item.updatedAt)}
                       </span>
                     </div>
 
@@ -147,7 +149,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                     {isAdmin && item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <label className="block text-xs font-medium text-gray-700 mb-2">
-                          Assign to Tailor:
+                          {t('kanban.assign_to_tailor')}
                         </label>
                         <select
                           onChange={(e) => {
@@ -158,7 +160,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                           className="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           defaultValue=""
                         >
-                          <option value="">Select tailor...</option>
+                          <option value="">{t('kanban.select_tailor')}</option>
                           {(workers[USER_ROLES.TAILOR] || []).map((tailor) => (
                             <option key={tailor} value={tailor}>
                               {tailor}
@@ -172,13 +174,13 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                     <div className="mt-3 pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">
-                          Status: {item.status}
+                          {t('table.status')}: {trStatus(item.status)}
                         </span>
                         {item.status === WORKFLOW_STATES.READY && (
                           <div className="flex items-center space-x-1">
                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                             <span className="text-xs text-green-600 font-medium">
-                              Complete
+                              {trStatus(WORKFLOW_STATES.READY)}
                             </span>
                           </div>
                         )}
@@ -191,7 +193,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                 {columnItems.length === 0 && (
                   <div className="text-center py-8">
                     <div className="text-gray-400 text-sm">
-                      No items in this stage
+                      {t('kanban.empty_stage')}
                     </div>
                   </div>
                 )}

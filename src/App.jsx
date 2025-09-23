@@ -6,9 +6,11 @@ import LoginScreen from './components/LoginScreen';
 import AdminDashboard from './components/AdminDashboard';
 import WorkerDashboard from './components/WorkerDashboard';
 import { USER_ROLES } from './store/useStore';
+import { useI18n } from './i18n';
 
 function App() {
   const { currentUser, currentUserRole, registerFcmToken, addNotification, restoreUserSession } = useStore();
+  const { t } = useI18n();
 
   // Restore user session on app load
   useEffect(() => {
@@ -27,8 +29,8 @@ function App() {
         if (token) registerFcmToken(currentUser, token);
         try {
           onMessageListener((payload) => {
-            const title = payload.notification?.title || 'New Task Assigned';
-            const body = payload.notification?.body || 'You have a new update';
+            const title = payload.notification?.title || t('store.push_task');
+            const body = payload.notification?.body || t('store.push_update');
             addNotification(currentUser, `${title}: ${body}`);
           });
         } catch (_) {}
@@ -44,15 +46,15 @@ function App() {
       // Show a lightweight toast to install
       const tId = toast((t) => (
         <div>
-          <div className="font-semibold mb-1">Install StitchWell?</div>
-          <div className="text-sm mb-2">Add the app to your home screen for better notifications.</div>
+          <div className="font-semibold mb-1">{t('app.install_title')}</div>
+          <div className="text-sm mb-2">{t('app.install_subtitle')}</div>
           <div className="flex gap-2">
             <button className="btn-primary px-3 py-1" onClick={async () => {
               toast.dismiss(t.id);
               e.prompt();
               try { await e.userChoice; } catch (_) {}
-            }}>Install</button>
-            <button className="btn-secondary px-3 py-1" onClick={() => toast.dismiss(t.id)}>Later</button>
+            }}>{t('common.install')}</button>
+            <button className="btn-secondary px-3 py-1" onClick={() => toast.dismiss(t.id)}>{t('common.later')}</button>
           </div>
         </div>
       ), { duration: 10000 });
@@ -130,9 +132,9 @@ function App() {
       {needsNotifEnable && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 p-3 flex items-center justify-between">
           <div>
-            Enable notifications to receive task alerts even when the app is closed.
+            {t('app.notif_banner')}
           </div>
-          <button className="px-3 py-1 bg-amber-600 text-white rounded" onClick={enableNotifications}>Enable</button>
+          <button className="px-3 py-1 bg-amber-600 text-white rounded" onClick={enableNotifications}>{t('common.enable')}</button>
         </div>
       )}
       {currentUserRole === USER_ROLES.ADMIN ? (

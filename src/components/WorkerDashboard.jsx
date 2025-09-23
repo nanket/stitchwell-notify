@@ -11,6 +11,9 @@ import {
 import useStore from '../store/useStore';
 import TaskCard from './TaskCard';
 import NotificationPanel from './NotificationPanel';
+import { useI18n } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher';
+import MonthlyCompletionCard from './MonthlyCompletionCard';
 
 const WorkerDashboard = () => {
   const currentUser = useStore(s => s.currentUser);
@@ -19,6 +22,7 @@ const WorkerDashboard = () => {
   const completeTask = useStore(s => s.completeTask);
   const clothItems = useStore(s => s.clothItems);
   const notifications = useStore(s => s.notifications);
+  const { t } = useI18n();
 
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -45,10 +49,10 @@ const WorkerDashboard = () => {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
-                  My Tasks
+                  {t('worker.my_tasks')}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  {currentUserRole} Dashboard
+                  {t('worker.dashboard', { role: currentUserRole })}
                 </p>
               </div>
             </div>
@@ -68,13 +72,15 @@ const WorkerDashboard = () => {
                     </span>
                   )}
                 </button>
-                
+
                 {showNotifications && (
-                  <NotificationPanel 
+                  <NotificationPanel
                     onClose={() => setShowNotifications(false)}
                   />
                 )}
               </div>
+
+              <LanguageSwitcher />
 
               {/* User Menu */}
               <div className="flex items-center gap-2 sm:gap-3">
@@ -89,7 +95,7 @@ const WorkerDashboard = () => {
                   className="btn-secondary px-3 py-2 whitespace-nowrap"
                 >
                   <LogOut className="w-4 h-4 mr-1" />
-                  Logout
+                  {t('common.logout')}
                 </button>
               </div>
             </div>
@@ -107,7 +113,7 @@ const WorkerDashboard = () => {
                 <Package className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Assigned Tasks</p>
+                <p className="text-sm font-medium text-gray-600">{t('worker.stats_assigned')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{myTasks.length}</p>
               </div>
             </div>
@@ -119,7 +125,7 @@ const WorkerDashboard = () => {
                 <Clock className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-sm font-medium text-gray-600">{t('worker.stats_in_progress')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{myTasks.length}</p>
               </div>
             </div>
@@ -131,10 +137,12 @@ const WorkerDashboard = () => {
                 <Bell className="h-6 w-6 text-red-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Notifications</p>
+                <p className="text-sm font-medium text-gray-600">{t('worker.stats_notifications')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{unreadCount}</p>
               </div>
             </div>
+
+          <MonthlyCompletionCard />
           </div>
         </div>
 
@@ -142,23 +150,22 @@ const WorkerDashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              My Assigned Tasks
+              {t('worker.section_title')}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Complete your assigned tasks to move items through the workflow
+              {t('worker.section_subtitle')}
             </p>
           </div>
-          
+
           <div className="p-6">
             {myTasks.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No tasks assigned
+                  {t('worker.no_tasks_title')}
                 </h3>
                 <p className="text-gray-600">
-                  You don't have any tasks assigned at the moment. 
-                  Check back later or contact your supervisor.
+                  {t('worker.no_tasks_body')}
                 </p>
               </div>
             ) : (

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Search, Filter, ArrowUpDown, User, Package, Trash2 } from 'lucide-react';
 import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
 import ConfirmDialog from './ConfirmDialog';
+import { useI18n } from '../i18n';
 
 const STATUSES = Object.values(WORKFLOW_STATES);
 const TYPES = ['Shirt', 'Pant', 'Kurta', 'Safari'];
@@ -20,6 +21,7 @@ const SortHeader = ({ label, sortKey, activeKey, direction, onSort }) => (
 );
 
 const AdminListView = ({ items, onAssignToTailor }) => {
+  const { t, trStatus, trType } = useI18n();
   const { completeTask, workers, deleteClothItem, currentUserRole, assignItemToWorker } = useStore();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -118,43 +120,43 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex flex-col md:flex-row md:items-end gap-3">
+      <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
         <div className="flex-1">
-          <label className="text-sm font-medium text-gray-700">Search</label>
+          <label className="text-sm font-medium text-gray-700">{t('filters.search')}</label>
           <div className="relative mt-1">
             <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Bill #, Type or Assignee"
+              placeholder={t('filters.search_placeholder')}
               className="input pl-9"
             />
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">Status</label>
+          <label className="text-sm font-medium text-gray-700">{t('filters.status')}</label>
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="select mt-1 w-full md:w-52">
-            <option value="">All</option>
-            {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="">{t('common.all')}</option>
+            {STATUSES.map(s => <option key={s} value={s}>{trStatus(s)}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">Type</label>
+          <label className="text-sm font-medium text-gray-700">{t('filters.type')}</label>
           <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} className="select mt-1 w-full md:w-40">
-            <option value="">All</option>
-            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            <option value="">{t('common.all')}</option>
+            {TYPES.map(t => <option key={t} value={t}>{trType(t)}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">Assignee</label>
+          <label className="text-sm font-medium text-gray-700">{t('filters.assignee')}</label>
           <select value={assignee} onChange={(e) => { setAssignee(e.target.value); setPage(1); }} className="select mt-1 w-full md:w-48">
-            <option value="">All</option>
+            <option value="">{t('common.all')}</option>
             {assignees.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
-        <div>
-          <label className="text-sm font-medium text-gray-700">Page size</label>
-          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="select mt-1 w-full md:w-28">
+        <div className="md:ml-auto shrink-0">
+          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">{t('filters.page_size')}</label>
+          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="select mt-1 w-full md:w-24">
             {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
@@ -165,19 +167,19 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         <table className="min-w-[900px] text-xs sm:text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr className="border-b">
-              <th className="px-3 py-2 w-36"><SortHeader label="Bill #" sortKey="billNumber" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 w-28"><SortHeader label="Type" sortKey="type" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2"><SortHeader label="Status" sortKey="status" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 w-48"><SortHeader label="Assigned To" sortKey="assignedTo" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 w-56"><SortHeader label="Updated" sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 w-64">Actions</th>
-              {isAdmin && <th className="px-3 py-2 w-20">Delete</th>}
+              <th className="px-3 py-2 w-36"><SortHeader label={t('table.bill')} sortKey="billNumber" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-3 py-2 w-28"><SortHeader label={t('table.type')} sortKey="type" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-3 py-2"><SortHeader label={t('table.status')} sortKey="status" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-3 py-2 w-48"><SortHeader label={t('table.assigned_to')} sortKey="assignedTo" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-3 py-2 w-56"><SortHeader label={t('table.updated')} sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-3 py-2 w-64">{t('table.actions')}</th>
+              {isAdmin && <th className="px-3 py-2 w-20">{t('table.delete')}</th>}
             </tr>
           </thead>
           <tbody>
             {pageItems.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-gray-500">No items found</td>
+                <td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-gray-500">{t('table.empty')}</td>
               </tr>
             ) : pageItems.map(item => (
               <tr key={item.id} className="border-b hover:bg-gray-50">
@@ -187,8 +189,8 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                     <span className="font-medium text-gray-900">{item.billNumber}</span>
                   </div>
                 </td>
-                <td className="px-3 py-2">{item.type}</td>
-                <td className="px-3 py-2">{item.status}</td>
+                <td className="px-3 py-2">{trType(item.type)}</td>
+                <td className="px-3 py-2">{trStatus(item.status)}</td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-400" />
@@ -204,14 +206,14 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                         onChange={(e) => e.target.value && onAssignToTailor(item.id, e.target.value)}
                         className="select w-full md:w-44"
                       >
-                        <option value="">Assign tailor...</option>
+                        <option value="">{t('table.assign_tailor')}</option>
                         {(workers[USER_ROLES.TAILOR] || []).map(t => (
                           <option key={t} value={t}>{t}</option>
                         ))}
                       </select>
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-xs">No action</span>
+                    <span className="text-gray-400 text-xs">{t('table.no_action')}</span>
                   )}
                   {/* Override assignment (Admin can reassign anytime) */}
                   <div className="mt-2">
@@ -220,7 +222,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                       onChange={(e) => e.target.value && assignItemToWorker(item.id, e.target.value)}
                       className="select w-full md:w-44"
                     >
-                      <option value="">Override assign...</option>
+                      <option value="">{t('table.override_assign')}</option>
                       {allWorkers.map(w => (
                         <option key={w} value={w}>{w}</option>
                       ))}
@@ -232,7 +234,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                     <button
                       onClick={() => handleDeleteClick(item)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete item"
+                      title={t('dialog.delete_title')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -246,13 +248,13 @@ const AdminListView = ({ items, onAssignToTailor }) => {
 
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm">
-        <div className="text-gray-600">Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, total)} of {total}</div>
+        <div className="text-gray-600">{t('common.showing', { from: (currentPage - 1) * pageSize + 1, to: Math.min(currentPage * pageSize, total), total })}</div>
         <div className="flex items-center gap-2">
-          <button className="btn-secondary" onClick={() => setPage(1)} disabled={currentPage === 1}>First</button>
-          <button className="btn-secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</button>
-          <span className="px-2">Page {currentPage} / {totalPages}</span>
-          <button className="btn-secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
-          <button className="btn-secondary" onClick={() => setPage(totalPages)} disabled={currentPage === totalPages}>Last</button>
+          <button className="btn-secondary" onClick={() => setPage(1)} disabled={currentPage === 1}>{t('table.first')}</button>
+          <button className="btn-secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{t('table.prev')}</button>
+          <span className="px-2">{t('common.page', { n: currentPage, m: totalPages })}</span>
+          <button className="btn-secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>{t('table.next')}</button>
+          <button className="btn-secondary" onClick={() => setPage(totalPages)} disabled={currentPage === totalPages}>{t('table.last')}</button>
         </div>
       </div>
 
@@ -261,10 +263,10 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, item: null })}
         onConfirm={handleDeleteConfirm}
-        title="Delete Item"
-        message={`Are you sure you want to delete item "${deleteDialog.item?.billNumber}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('dialog.delete_title')}
+        message={t('dialog.delete_msg', { bill: deleteDialog.item?.billNumber || '' })}
+        confirmText={t('table.delete')}
+        cancelText={t('common.cancel')}
         type="danger"
       />
     </div>

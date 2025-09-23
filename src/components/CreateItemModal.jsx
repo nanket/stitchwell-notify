@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { X, Package, Hash } from 'lucide-react';
 import useStore, { CLOTH_TYPES } from '../store/useStore';
+import { useI18n } from '../i18n';
 
 const CreateItemModal = ({ onClose }) => {
+  const { t, trType } = useI18n();
   const [formData, setFormData] = useState({
     type: '',
     billNumber: ''
@@ -17,13 +19,13 @@ const CreateItemModal = ({ onClose }) => {
     const newErrors = {};
 
     if (!formData.type) {
-      newErrors.type = 'Please select a cloth type';
+      newErrors.type = t('create_item.error_select_type');
     }
 
     if (!formData.billNumber.trim()) {
-      newErrors.billNumber = 'Bill number is required';
+      newErrors.billNumber = t('create_item.error_bill_required');
     } else if (existingItems.some(item => item.billNumber === formData.billNumber.trim())) {
-      newErrors.billNumber = 'Bill number already exists';
+      newErrors.billNumber = t('create_item.error_bill_exists');
     }
 
     setErrors(newErrors);
@@ -75,10 +77,10 @@ const CreateItemModal = ({ onClose }) => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Create New Item
+                {t('create_item.title')}
               </h2>
               <p className="text-sm text-gray-600">
-                Add a new cloth item to the workflow
+                {t('create_item.subtitle')}
               </p>
             </div>
           </div>
@@ -95,7 +97,7 @@ const CreateItemModal = ({ onClose }) => {
           {/* Cloth Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Cloth Type *
+              {t('create_item.cloth_type')}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {CLOTH_TYPES.map((type) => (
@@ -118,7 +120,7 @@ const CreateItemModal = ({ onClose }) => {
                   <span className={`text-sm font-medium ${
                     formData.type === type ? 'text-blue-700' : 'text-gray-700'
                   }`}>
-                    {type}
+                    {trType(type)}
                   </span>
                   {formData.type === type && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
@@ -136,7 +138,7 @@ const CreateItemModal = ({ onClose }) => {
           {/* Bill Number */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bill Number *
+              {t('create_item.bill_number')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -147,7 +149,7 @@ const CreateItemModal = ({ onClose }) => {
                 value={formData.billNumber}
                 onChange={(e) => handleInputChange('billNumber', e.target.value)}
                 className={`input pl-10 ${errors.billNumber ? 'border-red-300 focus:ring-red-500' : ''}`}
-                placeholder="Enter unique bill number"
+                placeholder={t('create_item.bill_placeholder')}
               />
             </div>
             {errors.billNumber && (
@@ -163,7 +165,7 @@ const CreateItemModal = ({ onClose }) => {
               className="flex-1 btn-secondary py-2"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('create_item.cancel')}
             </button>
             <button
               type="submit"
@@ -173,10 +175,10 @@ const CreateItemModal = ({ onClose }) => {
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Creating...
+                  {t('create_item.creating')}
                 </div>
               ) : (
-                'Create Item'
+                t('create_item.create')
               )}
             </button>
           </div>

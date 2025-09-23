@@ -3,6 +3,7 @@ import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
 import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { initFirebase } from '../firebase';
+import { tGlobal, translateStatus, translateClothType } from '../i18n';
 
 // Compute push endpoint dynamically. Prefer VITE_PUSH_ENDPOINT, else derive from REGISTER_TOKEN_ENDPOINT by swapping the path to sendTestNotification.
 function getPushEndpoint() {
@@ -227,11 +228,11 @@ const useStore = create(
         };
         const entry = users[u];
         if (!entry) {
-          toast.error('Invalid username or password');
+          toast.error(tGlobal('auth.invalid_login'));
           return false;
         }
         if (String(password || '') !== entry.password) {
-          toast.error('Invalid username or password');
+          toast.error(tGlobal('auth.invalid_login'));
           return false;
         }
         get().setCurrentUser(entry.name, entry.role);
@@ -284,18 +285,18 @@ const useStore = create(
         try {
           const db = await ensureDb();
           await setDoc(doc(db, 'workers', role), { list: arrayUnion(name), updatedAt: serverTimestamp() }, { merge: true });
-          toast.success(`Added ${name} to ${role}`);
+          toast.success(tGlobal('store.added_to_role', { name, role }));
         } catch (e) {
-          toast.error('Failed to add worker');
+          toast.error(tGlobal('store.failed_add_worker'));
         }
       },
       removeWorker: async (role, name) => {
         try {
           const db = await ensureDb();
           await setDoc(doc(db, 'workers', role), { list: arrayRemove(name), updatedAt: serverTimestamp() }, { merge: true });
-          toast.success(`Removed ${name} from ${role}`);
+          toast.success(tGlobal('store.removed_from_role', { name, role }));
         } catch (e) {
-          toast.error('Failed to remove worker');
+          toast.error(tGlobal('store.failed_remove_worker'));
         }
       },
       // Make a worker the default for a role by moving them to the front of the list
@@ -305,9 +306,9 @@ const useStore = create(
           const current = get().workers?.[role] || [];
           const next = [name, ...current.filter(n => n !== name)];
           await setDoc(doc(db, 'workers', role), { list: next, updatedAt: serverTimestamp() }, { merge: true });
-          toast.success(`${name} is now default for ${role}`);
+          toast.success(tGlobal('store.default_set', { name, role }));
         } catch (e) {
-          toast.error('Failed to set default worker');
+          toast.error(tGlobal('store.failed_default'));
         }
       },
 
@@ -380,15 +381,15 @@ const useStore = create(
           const ref = await addDoc(collection(db, 'clothItems'), payload);
           // Push notification via backend
           if (cuttingAssignee) {
-            const typeLabel = String(type || '').charAt(0).toUpperCase() + String(type || '').slice(1).toLowerCase();
-            const title = `New task: Bill #${billNumber} (${typeLabel})`;
-            const message = `New task: Bill #${billNumber} (${typeLabel}) assigned for cutting`;
+            const typeLabel = translateClothType(String(type || '').charAt(0).toUpperCase() + String(type || '').slice(1).toLowerCase());
+            const title = tGlobal('store.new_task_title', { bill: billNumber, type: typeLabel });
+            const message = tGlobal('store.new_task_body_cutting', { bill: billNumber, type: typeLabel });
             get().addNotification(cuttingAssignee, message, title);
           }
-          toast.success(`${type} item created successfully!`);
+          toast.success(tGlobal('store.created_ok', { type }));
           return { id: ref.id, ...payload };
         } catch (e) {
-          toast.error('Failed to create item');
+          toast.error(tGlobal('store.failed_create'));
         }
       },
 
@@ -396,10 +397,10 @@ const useStore = create(
       completeTask: async (itemId) => {
         const state = get();
         const item = state.clothItems.find(i => i.id === itemId);
-        if (!item) { toast.error('Item not found!'); return; }
+        if (!item) { toast.error(tGlobal('store.item_not_found')); return; }
 
         const transition = computeNextTransition(item, state.workers);
-        if (!transition) { toast.error('No valid transition available!'); return; }
+        if (!transition) { toast.error(tGlobal('store.no_valid_transition')); return; }
 
         try {
           const db = await ensureDb();
@@ -414,15 +415,15 @@ const useStore = create(
             history: newHistory
           });
           if (transition.assignedTo) {
-            const typeLabel = String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase();
+            const typeLabel = translateClothType(String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase());
             const nextStage = stageFromStatus(transition.nextState);
-            const title = `Task completed: Bill #${item.billNumber} (${typeLabel})`;
-            const message = `Task completed: Bill #${item.billNumber} (${typeLabel}) ready for ${nextStage}`;
+            const title = tGlobal('store.task_done_title', { bill: item.billNumber, type: typeLabel });
+            const message = tGlobal('store.task_done_body', { bill: item.billNumber, type: typeLabel, stage: nextStage });
             get().addNotification(transition.assignedTo, message, title);
           }
-          toast.success(`Task completed! Item moved to ${transition.nextState}`);
+          toast.success(tGlobal('store.task_completed_moved', { status: translateStatus(transition.nextState) }));
         } catch (e) {
-          toast.error('Failed to update task');
+          toast.error(tGlobal('store.failed_update_task'));
         }
       },
 
@@ -430,7 +431,7 @@ const useStore = create(
       assignItemToWorker: async (itemId, workerName) => {
         const state = get();
         const item = state.clothItems.find(i => i.id === itemId);
-        if (!item) { toast.error('Item not found!'); return; }
+        if (!item) { toast.error(tGlobal('store.item_not_found')); return; }
         try {
           const db = await ensureDb();
           const isTailorAssignment = item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT;
@@ -446,15 +447,15 @@ const useStore = create(
             history: newHistory
           });
           {
-            const typeLabel = String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase();
+            const typeLabel = translateClothType(String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase());
             const stage = stageFromStatus(nextStatus);
-            const title = `New task: Bill #${item.billNumber} (${typeLabel})`;
-            const message = `New task: Bill #${item.billNumber} (${typeLabel}) assigned for ${stage}`;
+            const title = tGlobal('store.new_task_title', { bill: item.billNumber, type: typeLabel });
+            const message = tGlobal('store.new_task_body_stage', { bill: item.billNumber, type: typeLabel, stage });
             get().addNotification(workerName, message, title);
           }
           toast.success(`Item assigned to ${workerName}!`);
         } catch (e) {
-          toast.error('Failed to assign item');
+          toast.error(tGlobal('store.failed_update_task'));
         }
       },
 
@@ -473,8 +474,8 @@ const useStore = create(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userName,
-              title: title || 'StitchWell Notification',
-              body: body || 'You have a new update',
+              title: title || tGlobal('store.push_task'),
+              body: body || tGlobal('store.push_update'),
               data: {
                 url: '/',
                 timestamp: new Date().toISOString()
@@ -484,7 +485,7 @@ const useStore = create(
 
           if (!response.ok) {
             // Fallback: GET with query string for environments that reject JSON parsing (400 INVALID_ARGUMENT)
-            const qs = new URLSearchParams({ userName, title: title || 'StitchWell Notification', body: body || 'You have a new update' });
+            const qs = new URLSearchParams({ userName, title: title || tGlobal('store.push_task'), body: body || tGlobal('store.push_update') });
             try {
               response = await fetch(`${PUSH_ENDPOINT}?${qs.toString()}`, { method: 'GET' });
             } catch (_) {}
@@ -536,8 +537,8 @@ const useStore = create(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userName,
-              title: title || message || 'StitchWell Task',
-              body: message || 'You have a new task update',
+              title: title || message || tGlobal('store.push_task'),
+              body: message || tGlobal('store.push_update'),
               data: {
                 url: '/',
                 timestamp: new Date().toISOString()
@@ -547,7 +548,7 @@ const useStore = create(
           console.log('Push response:', response);
 
           if (!response.ok) {
-            const qs = new URLSearchParams({ userName, title: title || message || 'StitchWell Task', body: message || 'You have a new task update' });
+            const qs = new URLSearchParams({ userName, title: title || message || tGlobal('store.push_task'), body: message || tGlobal('store.push_update') });
             try {
               response = await fetch(`${PUSH_ENDPOINT}?${qs.toString()}`, { method: 'GET' });
             } catch (_) {}
@@ -669,24 +670,24 @@ const useStore = create(
         const state = get();
         const item = state.clothItems.find(i => i.id === itemId);
         if (!item) {
-          toast.error('Item not found!');
+          toast.error(tGlobal('store.item_not_found'));
           return false;
         }
 
         // Check if user is admin
         if (state.currentUserRole !== USER_ROLES.ADMIN) {
-          toast.error('Only admin users can delete items!');
+          toast.error(tGlobal('store.only_admin_delete'));
           return false;
         }
 
         try {
           const db = await ensureDb();
           await deleteDoc(doc(db, 'clothItems', itemId));
-          toast.success(`Item ${item.billNumber} deleted successfully!`);
+          toast.success(tGlobal('store.deleted_ok', { bill: item.billNumber }));
           return true;
         } catch (e) {
           console.error('Delete error:', e);
-          toast.error('Failed to delete item');
+          toast.error(tGlobal('store.failed_delete'));
           return false;
         }
       },
