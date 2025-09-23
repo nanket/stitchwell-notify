@@ -47,13 +47,13 @@ const MonthlyCompletionCard = () => {
           <p className="text-2xl font-semibold text-gray-900">{stats.count}</p>
         </div>
       </div>
-      <div className="mt-3">
-        <label className="text-xs text-gray-600 mr-2">{t('analytics.monthly_completion.select_month')}</label>
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        <label className="text-xs text-gray-600">{t('analytics.monthly_completion.select_month')}</label>
         <input
           type="month"
           value={ym}
           onChange={(e) => setYm(e.target.value)}
-          className="input inline-block w-auto align-middle"
+          className="input inline-block w-full sm:w-[12rem] max-w-full h-9 py-1 text-sm align-middle flex-1 min-w-[8rem]"
         />
       </div>
     </div>

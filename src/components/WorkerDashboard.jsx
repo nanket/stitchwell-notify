@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   LogOut,
   Bell,
@@ -6,14 +6,15 @@ import {
   Scissors,
   CheckCircle,
   Clock,
-  Package
+  Package,
+  Menu,
+  X
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import TaskCard from './TaskCard';
 import NotificationPanel from './NotificationPanel';
 import { useI18n } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher';
-import MonthlyCompletionCard from './MonthlyCompletionCard';
 
 const WorkerDashboard = () => {
   const currentUser = useStore(s => s.currentUser);
@@ -25,12 +26,20 @@ const WorkerDashboard = () => {
   const { t } = useI18n();
 
   const [showNotifications, setShowNotifications] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileMenuOpen]);
 
   const myTasks = useMemo(() => {
     if (!currentUser) return [];
     return (clothItems || []).filter(item => item.assignedTo === currentUser);
   }, [clothItems, currentUser]);
-  const unreadCount = useMemo(() => (notifications || []).filter(n => !n.read).length, [notifications]);
+  const unreadCount = useMemo(() => (notifications || []).filter(n => n.userName === currentUser && !n.read).length, [notifications, currentUser]);
 
   const handleCompleteTask = (itemId) => {
     completeTask(itemId);
@@ -51,14 +60,51 @@ const WorkerDashboard = () => {
                 <h1 className="text-xl font-semibold text-gray-900">
                   {t('worker.my_tasks')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                  {t('worker.dashboard', { role: currentUserRole })}
+                <p className="text-sm text-gray-600">
+                  {t('worker.dashboard', { role: currentUserRole })} • {t('worker.name_label')}: <span className="font-medium text-gray-900">{currentUser}</span>
                 </p>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center flex-wrap gap-2 sm:gap-4">
+            {/* Mobile actions (bell + hamburger) */}
+            <div className="flex items-center gap-2 md:hidden">
+              {/* Notifications (mobile) */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 touch-target text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-6 w-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <NotificationPanel
+                    align="left"
+                    onClose={() => setShowNotifications(false)}
+                  />
+                )}
+              </div>
+
+              {/* Hamburger */}
+              <button
+                onClick={() => setMobileMenuOpen(v => !v)}
+                className="p-2 touch-target text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg"
+                aria-label="Menu"
+                aria-controls="worker-mobile-menu"
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
+
+            {/* Actions (desktop) */}
+            <div className="hidden md:flex items-center flex-wrap gap-2 sm:gap-4">
               {/* Notifications */}
               <div className="relative">
                 <button
@@ -103,10 +149,30 @@ const WorkerDashboard = () => {
         </div>
       </header>
 
+      {/* Mobile menu panel */}
+      {mobileMenuOpen && (
+        <nav id="worker-mobile-menu" aria-label="Mobile menu" className="md:hidden bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
+            <div className="relative">
+              <button onClick={() => { setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
+                <Bell className="w-4 h-4 mr-2" /> {t('notif_panel.title')}
+                {unreadCount > 0 && (
+                  <span className="absolute right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">{unreadCount}</span>
+                )}
+              </button>
+            </div>
+            <div className="flex items-center">
+              <LanguageSwitcher />
+            </div>
+            <button onClick={logout} className="btn-secondary w-full justify-start">{t('common.logout')}</button>
+          </div>
+        </nav>
+      )}
+
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="card">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -131,19 +197,8 @@ const WorkerDashboard = () => {
             </div>
           </div>
 
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <Bell className="h-6 w-6 text-red-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('worker.stats_notifications')}</p>
-                <p className="text-2xl font-semibold text-gray-900">{unreadCount}</p>
-              </div>
-            </div>
 
-          <MonthlyCompletionCard />
-          </div>
+
         </div>
 
         {/* Tasks List */}

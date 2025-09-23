@@ -1,26 +1,13 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
-import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove, writeBatch, limit } from 'firebase/firestore';
 import { initFirebase } from '../firebase';
 import { tGlobal, translateStatus, translateClothType } from '../i18n';
 
-// Compute push endpoint dynamically. Prefer VITE_PUSH_ENDPOINT, else derive from REGISTER_TOKEN_ENDPOINT by swapping the path to sendTestNotification.
+// Compute push endpoint from environment. Keep simple and explicit to avoid misconfiguration.
 function getPushEndpoint() {
-  const direct = import.meta.env.VITE_PUSH_ENDPOINT;
-  if (direct) return direct;
-  const reg = import.meta.env.VITE_REGISTER_TOKEN_ENDPOINT || '';
-  try {
-    if (!reg) return '';
-    const u = new URL(reg);
-    // Replace the last path segment with the push function name
-    const parts = u.pathname.split('/');
-    parts[parts.length - 1] = 'sendTestNotification';
-    u.pathname = parts.join('/');
-    return u.toString();
-  } catch (_) {
-    return '';
-  }
+  return import.meta.env.VITE_PUSH_ENDPOINT || '';
 }
 const REGISTER_TOKEN_ENDPOINT = import.meta.env.VITE_REGISTER_TOKEN_ENDPOINT || '';
 
@@ -136,6 +123,81 @@ export const USER_ROLES = {
   IRONING_WORKER: 'Ironing Worker',
   PACKAGING_WORKER: 'Packaging Worker'
 };
+
+
+// Map stage -> recipient role
+function roleFromStage(stage) {
+  switch ((stage || '').toLowerCase()) {
+    case 'cutting': return USER_ROLES.CUTTING_WORKER;
+    case 'thread matching': return USER_ROLES.THREADING_WORKER;
+    case 'tailor assignment': return USER_ROLES.ADMIN;
+    case 'stitching': return USER_ROLES.TAILOR;
+    case 'kaach': return USER_ROLES.BUTTONING_WORKER;
+    case 'ironing': return USER_ROLES.IRONING_WORKER;
+    case 'packaging': return USER_ROLES.PACKAGING_WORKER;
+    case 'ready': return USER_ROLES.ADMIN;
+    default: return null;
+  }
+}
+
+function pickVariant(keys) {
+  if (!Array.isArray(keys) || keys.length === 0) return '';
+  const idx = Math.floor(Math.random() * keys.length);
+  return keys[Math.min(keys.length - 1, Math.max(0, idx))];
+}
+
+function tOr(key, params, fallback) {
+  const res = tGlobal(key, params);
+  return res === key ? fallback : res;
+}
+
+// Build localized, concise, context-aware notification title/body
+function buildNotification({ kind, stage, bill, typeLabel, recipientRole }) {
+  const p = { bill, type: typeLabel, stage, role: recipientRole };
+  if (kind === 'assign') {
+    let titleKeys = ['notify.assign.generic.title_1'];
+    let bodyKeys = ['notify.assign.generic.body_1'];
+    switch ((stage || '').toLowerCase()) {
+      case 'cutting':
+        titleKeys = ['notify.assign.cutting.title_1', 'notify.assign.cutting.title_2'];
+        bodyKeys = ['notify.assign.cutting.body_1', 'notify.assign.cutting.body_2'];
+        break;
+      case 'thread matching':
+        titleKeys = ['notify.assign.threading.title_1', 'notify.assign.threading.title_2'];
+        bodyKeys = ['notify.assign.threading.body_1', 'notify.assign.threading.body_2'];
+        break;
+      case 'stitching':
+        titleKeys = ['notify.assign.stitching.title_1', 'notify.assign.stitching.title_2'];
+        bodyKeys = ['notify.assign.stitching.body_1', 'notify.assign.stitching.body_2'];
+        break;
+      case 'kaach':
+        titleKeys = ['notify.assign.kaach.title_1'];
+        bodyKeys = ['notify.assign.kaach.body_1'];
+        break;
+      case 'ironing':
+        titleKeys = ['notify.assign.ironing.title_1'];
+        bodyKeys = ['notify.assign.ironing.body_1'];
+        break;
+      case 'packaging':
+        titleKeys = ['notify.assign.packaging.title_1'];
+        bodyKeys = ['notify.assign.packaging.body_1'];
+        break;
+    }
+    const fallbackTitle = tGlobal('store.new_task_title', p);
+    const fallbackBody = (stage && stage.toLowerCase() === 'cutting')
+      ? tGlobal('store.new_task_body_cutting', p)
+      : tGlobal('store.new_task_body_stage', p);
+    const title = tOr(pickVariant(titleKeys), p, fallbackTitle);
+    const body = tOr(pickVariant(bodyKeys), p, fallbackBody);
+    return { title, body };
+  }
+  if (kind === 'progress') {
+    const title = tOr(pickVariant(['notify.progress.to_stage.title_1', 'notify.progress.to_stage.title_2']), p, tGlobal('store.task_done_title', p));
+    const body = tOr(pickVariant(['notify.progress.to_stage.body_1', 'notify.progress.to_stage.body_2']), p, tGlobal('store.task_done_body', p));
+    return { title, body };
+  }
+  return { title: tGlobal('store.push_task'), body: tGlobal('store.push_update') };
+}
 
 // Predefined workers for each role (admin can edit later from UI)
 const initialWorkers = {
@@ -382,9 +444,9 @@ const useStore = create(
           // Push notification via backend
           if (cuttingAssignee) {
             const typeLabel = translateClothType(String(type || '').charAt(0).toUpperCase() + String(type || '').slice(1).toLowerCase());
-            const title = tGlobal('store.new_task_title', { bill: billNumber, type: typeLabel });
-            const message = tGlobal('store.new_task_body_cutting', { bill: billNumber, type: typeLabel });
-            get().addNotification(cuttingAssignee, message, title);
+            const stage = 'cutting';
+            const { title, body } = buildNotification({ kind: 'assign', stage, bill: billNumber, typeLabel, recipientRole: USER_ROLES.CUTTING_WORKER });
+            get().addNotification(cuttingAssignee, body, title);
           }
           toast.success(tGlobal('store.created_ok', { type }));
           return { id: ref.id, ...payload };
@@ -417,9 +479,8 @@ const useStore = create(
           if (transition.assignedTo) {
             const typeLabel = translateClothType(String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase());
             const nextStage = stageFromStatus(transition.nextState);
-            const title = tGlobal('store.task_done_title', { bill: item.billNumber, type: typeLabel });
-            const message = tGlobal('store.task_done_body', { bill: item.billNumber, type: typeLabel, stage: nextStage });
-            get().addNotification(transition.assignedTo, message, title);
+            const { title, body } = buildNotification({ kind: 'progress', stage: nextStage, bill: item.billNumber, typeLabel, recipientRole: roleFromStage(nextStage) });
+            get().addNotification(transition.assignedTo, body, title);
           }
           toast.success(tGlobal('store.task_completed_moved', { status: translateStatus(transition.nextState) }));
         } catch (e) {
@@ -449,9 +510,8 @@ const useStore = create(
           {
             const typeLabel = translateClothType(String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase());
             const stage = stageFromStatus(nextStatus);
-            const title = tGlobal('store.new_task_title', { bill: item.billNumber, type: typeLabel });
-            const message = tGlobal('store.new_task_body_stage', { bill: item.billNumber, type: typeLabel, stage });
-            get().addNotification(workerName, message, title);
+            const { title, body } = buildNotification({ kind: 'assign', stage, bill: item.billNumber, typeLabel, recipientRole: roleFromStage(stage) });
+            get().addNotification(workerName, body, title);
           }
           toast.success(`Item assigned to ${workerName}!`);
         } catch (e) {
@@ -508,19 +568,38 @@ const useStore = create(
 
       // Add notification for a specific user (also triggers FCM push)
       addNotification: async (userName, message, title) => {
-        const notif = { userName, message, timestamp: new Date().toISOString(), read: false };
-        set(state => ({ notifications: [notif, ...state.notifications] }));
-
-        // Persist to Firestore
+        // Persist to Firestore first to get the real ID
         try {
           const db = await ensureDb();
-          await addDoc(collection(db, 'notifications'), {
+          const docRef = await addDoc(collection(db, 'notifications'), {
             userName,
             message,
             timestamp: serverTimestamp(),
             read: false
           });
-        } catch (_) {}
+          
+          // Add to local state with the real Firestore ID
+          const notif = { 
+            id: docRef.id, 
+            userName, 
+            message, 
+            timestamp: new Date().toISOString(), 
+            read: false 
+          };
+          set(state => ({ notifications: [notif, ...state.notifications] }));
+        } catch (e) {
+          console.error('Failed to add notification:', e);
+          // Fallback: add to local state with temp ID
+          const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const notif = { 
+            id: tempId, 
+            userName, 
+            message, 
+            timestamp: new Date().toISOString(), 
+            read: false 
+          };
+          set(state => ({ notifications: [notif, ...state.notifications] }));
+        }
 
         // Push is now handled by Cloud Functions Firestore trigger on clothItems changes
 
@@ -569,16 +648,64 @@ const useStore = create(
 
       // Mark notification as read (best-effort Firestore update)
       markNotificationAsRead: async (notificationId) => {
+        if (!notificationId) return;
+        
+        // Local optimistic update
         set(state => ({
           notifications: state.notifications.map(n =>
             n.id === notificationId ? { ...n, read: true } : n
           )
         }));
-        try {
-          const db = await ensureDb();
-          await updateDoc(doc(db, 'notifications', notificationId), { read: true });
-        } catch (_) {}
+        
+        // Update Firestore if it's not a temporary ID
+        if (!notificationId.startsWith('temp_')) {
+          try {
+            const db = await ensureDb();
+            await updateDoc(doc(db, 'notifications', notificationId), { read: true });
+          } catch (e) {
+            console.error('Failed to update notification in Firestore:', e);
+          }
+        }
       },
+
+      // Mark all my notifications as read (batch, latest loaded)
+      markAllMyNotificationsAsRead: async () => {
+        const state = get();
+        const me = state.currentUser;
+        if (!me) return;
+        
+        const myUnreadNotifications = (state.notifications || [])
+          .filter(n => n.userName === me && !n.read && n.id);
+        
+        if (myUnreadNotifications.length === 0) return;
+        
+        const allIds = myUnreadNotifications.map(n => n.id);
+        const firestoreIds = myUnreadNotifications
+          .filter(n => !n.id.startsWith('temp_'))
+          .map(n => n.id);
+        
+        // Local optimistic update for all notifications
+        set(state => ({
+          notifications: state.notifications.map(n =>
+            allIds.includes(n.id) ? { ...n, read: true } : n
+          )
+        }));
+        
+        // Firestore batch update for real documents
+        if (firestoreIds.length > 0) {
+          try {
+            const db = await ensureDb();
+            const batch = writeBatch(db);
+            firestoreIds.forEach(id => {
+              batch.update(doc(db, 'notifications', id), { read: true });
+            });
+            await batch.commit();
+          } catch (e) {
+            console.error('Failed to batch update notifications in Firestore:', e);
+          }
+        }
+      },
+
 
       // Get items assigned to current user
       getMyTasks: () => {
@@ -648,9 +775,14 @@ const useStore = create(
         try {
           const db = await ensureDb();
           if (_unsubNotifs) _unsubNotifs();
-          const q = query(collection(db, 'notifications'), where('userName', '==', userName), orderBy('timestamp', 'desc'));
+          const q = query(
+            collection(db, 'notifications'),
+            where('userName', '==', userName),
+            orderBy('timestamp', 'desc'),
+            limit(50)
+          );
           _unsubNotifs = onSnapshot(q, (snap) => {
-            const arr = snap.docs.map(d => {
+            const firestoreNotifications = snap.docs.map(d => {
               const data = d.data();
               return {
                 id: d.id,
@@ -658,10 +790,11 @@ const useStore = create(
                 timestamp: toISO(data.timestamp) || data.timestamp || null
               };
             });
-            set({ notifications: arr });
+            
+            set({ notifications: firestoreNotifications });
           });
         } catch (e) {
-          // no-op
+          console.error('Error subscribing to notifications:', e);
         }
       },
 

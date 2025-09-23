@@ -42,6 +42,7 @@ const translations = {
       actions: 'Actions',
       status: 'Status',
       type: 'Type',
+      bill: 'Bill',
       assigned_to: 'Assigned To',
       updated: 'Updated:',
       page: 'Page {n} / {m}',
@@ -73,7 +74,8 @@ const translations = {
       stats_completed: 'Completed',
       stats_pending: 'Pending Assignment',
       table_title: 'Workflow Items (Table View)',
-      table_subtitle: 'Filter, sort and paginate items for large datasets'
+      table_subtitle: 'Filter, sort and paginate items for large datasets',
+      analytics: 'Analytics'
     },
     filters: {
       search: 'Search',
@@ -109,6 +111,7 @@ const translations = {
     worker: {
       my_tasks: 'My Tasks',
       dashboard: '{role} Dashboard',
+      name_label: 'Worker',
       assigned_tasks: 'Assigned Tasks',
       notifications: 'Notifications',
       my_assigned_tasks: 'My Assigned Tasks',
@@ -167,6 +170,24 @@ const translations = {
       monthly_completion: {
         title: 'Completed this month',
         select_month: 'Select month'
+      },
+      details: {
+        title: 'Completion details',
+        select_month: 'Select month',
+        total: 'Total completed',
+        unknown_tailor: 'Unknown',
+        assigned_on: 'Assigned on',
+        completed_on: 'Completed on',
+        per_page: 'Per page',
+        showing_tailors: 'Showing {from}-{to} of {total} tailors',
+        show_more: 'Show {count} more items',
+        show_less: 'Show less',
+        page_info: 'Page {current} of {total}',
+        prev: 'Previous',
+        next: 'Next',
+        close: 'Close',
+        empty: 'No completed items for this month',
+        view: 'View details'
       }
     },
     dialog: {
@@ -225,6 +246,52 @@ const translations = {
       new_task_body_stage: 'New task: Bill #{bill} ({type}) assigned for {stage}',
       task_done_title: 'Task completed: Bill #{bill} ({type})',
       task_done_body: 'Task completed: Bill #{bill} ({type}) ready for {stage}'
+    },
+    notify: {
+      assign: {
+        generic: {
+          title_1: 'New task: Bill #{bill} ({type})',
+          body_1: 'Next step: {stage}'
+        },
+        cutting: {
+          title_1: 'Cut next: Bill #{bill} ({type})',
+          title_2: 'Ready for cutting: Bill #{bill} ({type})',
+          body_1: 'Start cutting now',
+          body_2: 'Queue up cutting for this order'
+        },
+        threading: {
+          title_1: 'Match thread: Bill #{bill} ({type})',
+          title_2: 'Thread color match needed: Bill #{bill}',
+          body_1: 'Choose matching thread and prep',
+          body_2: 'Match thread color for this piece'
+        },
+        stitching: {
+          title_1: 'Start stitching: Bill #{bill} ({type})',
+          title_2: 'Stitch now: Bill #{bill} ({type})',
+          body_1: 'Begin stitching for this piece',
+          body_2: 'Proceed with stitching'
+        },
+        kaach: {
+          title_1: 'Do kaach: Bill #{bill} ({type})',
+          body_1: 'Add buttons/kaach and finish prep'
+        },
+        ironing: {
+          title_1: 'Press and finish: Bill #{bill} ({type})',
+          body_1: 'Iron neatly and prepare for packing'
+        },
+        packaging: {
+          title_1: 'Pack and seal: Bill #{bill} ({type})',
+          body_1: 'Pack securely and mark ready'
+        }
+      },
+      progress: {
+        to_stage: {
+          title_1: 'Moved to {stage}: Bill #{bill} ({type})',
+          title_2: 'Next step: {stage} — Bill #{bill} ({type})',
+          body_1: 'Next up: {stage}',
+          body_2: 'Please proceed with {stage}'
+        }
+      }
     }
   },
   hi: {
@@ -245,6 +312,7 @@ const translations = {
       actions: 'क्रियाएँ',
       status: 'स्थिति',
       type: 'प्रकार',
+      bill: 'बिल',
       assigned_to: 'असाइन',
       updated: 'अपडेटेड:',
       page: 'पृष्ठ {n} / {m}',
@@ -276,7 +344,8 @@ const translations = {
       stats_completed: 'पूर्ण',
       stats_pending: 'असाइनमेंट लंबित',
       table_title: 'कार्यप्रवाह आइटम (तालिका)',
-      table_subtitle: 'बड़े डेटा सेट के लिए फ़िल्टर, सॉर्ट और पेजिनेशन करें'
+      table_subtitle: 'बड़े डेटा सेट के लिए फ़िल्टर, सॉर्ट और पेजिनेशन करें',
+      analytics: 'विश्लेषण'
     },
     filters: {
       search: 'खोज',
@@ -312,6 +381,7 @@ const translations = {
     worker: {
       my_tasks: 'मेरे कार्य',
       dashboard: '{role} डैशबोर्ड',
+      name_label: 'कर्मी',
       assigned_tasks: 'असाइन किए गए कार्य',
       notifications: 'सूचनाएँ',
       my_assigned_tasks: 'मेरे असाइन किए गए कार्य',
@@ -377,6 +447,24 @@ const translations = {
       monthly_completion: {
         title: 'इस माह पूर्ण',
         select_month: 'महीना चुनें'
+      },
+      details: {
+        title: 'विस्तृत पूर्णता',
+        select_month: 'महीना चुनें',
+        total: 'कुल पूर्ण',
+        unknown_tailor: 'अज्ञात',
+        assigned_on: 'असाइन दिनांक',
+        completed_on: 'पूर्ण दिनांक',
+        per_page: 'प्रति पृष्ठ',
+        showing_tailors: '{total} में से {from}-{to} दर्जी दिखा रहे हैं',
+        show_more: '{count} और आइटम दिखाएं',
+        show_less: 'कम दिखाएं',
+        page_info: 'पृष्ठ {current} / {total}',
+        prev: 'पिछला',
+        next: 'अगला',
+        close: 'बंद करें',
+        empty: 'इस महीने कोई पूर्ण आइटम नहीं',
+        view: 'विवरण देखें'
       }
     },
     roles: {
@@ -427,6 +515,52 @@ const translations = {
       new_task_body_stage: 'नया कार्य: बिल #{bill} ({type}) {stage} के लिए असाइन',
       task_done_title: 'कार्य पूर्ण: बिल #{bill} ({type})',
       task_done_body: 'कार्य पूर्ण: बिल #{bill} ({type}) {stage} के लिए तैयार'
+    },
+    notify: {
+      assign: {
+        generic: {
+          title_1: 'नया कार्य: बिल #{bill} ({type})',
+          body_1: 'अगला चरण: {stage}'
+        },
+        cutting: {
+          title_1: 'कटिंग करें: बिल #{bill} ({type})',
+          title_2: 'कटिंग के लिए तैयार: बिल #{bill} ({type})',
+          body_1: 'अभी कटिंग शुरू करें',
+          body_2: 'इस ऑर्डर की कटिंग कतार में लगाएँ'
+        },
+        threading: {
+          title_1: 'धागा मिलान: बिल #{bill} ({type})',
+          title_2: 'थ्रेड मैच चाहिए: बिल #{bill}',
+          body_1: 'मिलता धागा चुनें और तैयारी करें',
+          body_2: 'धागे का रंग मिलाएँ'
+        },
+        stitching: {
+          title_1: 'सिलाई शुरू करें: बिल #{bill} ({type})',
+          title_2: 'अब सिलाई करें: बिल #{bill} ({type})',
+          body_1: 'इस पीस की सिलाई शुरू करें',
+          body_2: 'सिलाई आगे बढ़ाएँ'
+        },
+        kaach: {
+          title_1: 'काँच करें: बिल #{bill} ({type})',
+          body_1: 'बटन/काँच लगाएँ'
+        },
+        ironing: {
+          title_1: 'इस्त्री करें और तैयार करें: बिल #{bill} ({type})',
+          body_1: 'साफ-सुथरी इस्त्री करें, पैकिंग हेतु तैयार'
+        },
+        packaging: {
+          title_1: 'पैक करें: बिल #{bill} ({type})',
+          body_1: 'सुरक्षित पैक करें और रेडी मार्क करें'
+        }
+      },
+      progress: {
+        to_stage: {
+          title_1: 'अब {stage}: बिल #{bill} ({type})',
+          title_2: 'अगला चरण: {stage} — बिल #{bill} ({type})',
+          body_1: 'अगला काम: {stage}',
+          body_2: 'कृपया {stage} करें'
+        }
+      }
     }
   }
 };

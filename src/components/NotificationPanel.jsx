@@ -1,13 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Bell, X, Clock, CheckCircle } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useI18n } from '../i18n';
 
-const NotificationPanel = ({ onClose }) => {
+const NotificationPanel = ({ onClose, align = 'right' }) => {
   const { t } = useI18n();
   const panelRef = useRef(null);
-  const { getMyNotifications, markNotificationAsRead } = useStore();
-  const notifications = getMyNotifications();
+  const { markNotificationAsRead, markAllMyNotificationsAsRead } = useStore();
+  const notifications = useStore(s => s.notifications);
+  const currentUser = useStore(s => s.currentUser);
+  const myNotifications = useMemo(() => {
+    const arr = (notifications || []).filter(n => n.userName === currentUser);
+    // Ensure most recent first
+    return arr.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }, [notifications, currentUser]);
+  const latest10 = myNotifications.slice(0, 10);
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -52,12 +59,14 @@ const NotificationPanel = ({ onClose }) => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = myNotifications.filter(n => !n.read).length;
+
+  const alignmentClass = align === 'left' ? 'left-0' : 'right-0';
 
   return (
     <div
       ref={panelRef}
-      className="fixed inset-x-2 top-16 sm:inset-auto sm:top-14 sm:right-4 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] max-h-[90vh] sm:max-h-96 overflow-hidden"
+      className={`absolute top-12 ${alignmentClass} w-72 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] max-h-[70vh] overflow-hidden flex flex-col`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -79,8 +88,8 @@ const NotificationPanel = ({ onClose }) => {
       </div>
 
       {/* Notifications List */}
-      <div className="max-h-80 overflow-y-auto">
-        {notifications.length === 0 ? (
+      <div className="flex-1 overflow-y-auto">
+        {myNotifications.length === 0 ? (
           <div className="p-8 text-center">
             <Bell className="mx-auto h-12 w-12 text-gray-300 mb-4" />
             <h4 className="text-sm font-medium text-gray-900 mb-2">
@@ -92,7 +101,7 @@ const NotificationPanel = ({ onClose }) => {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {notifications.map((notification) => (
+            {latest10.map((notification) => (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
@@ -142,14 +151,10 @@ const NotificationPanel = ({ onClose }) => {
       </div>
 
       {/* Footer */}
-      {notifications.length > 0 && unreadCount > 0 && (
+      {myNotifications.length > 0 && unreadCount > 0 && (
         <div className="p-3 border-t border-gray-200 bg-gray-50">
           <button
-            onClick={() => {
-              notifications
-                .filter(n => !n.read)
-                .forEach(n => markNotificationAsRead(n.id));
-            }}
+            onClick={markAllMyNotificationsAsRead}
             className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
             {t('notif_panel.mark_all_read')}

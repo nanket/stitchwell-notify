@@ -247,14 +247,32 @@ const AdminListView = ({ items, onAssignToTailor }) => {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm">
-        <div className="text-gray-600">{t('common.showing', { from: (currentPage - 1) * pageSize + 1, to: Math.min(currentPage * pageSize, total), total })}</div>
-        <div className="flex items-center gap-2">
-          <button className="btn-secondary" onClick={() => setPage(1)} disabled={currentPage === 1}>{t('table.first')}</button>
-          <button className="btn-secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>{t('table.prev')}</button>
-          <span className="px-2">{t('common.page', { n: currentPage, m: totalPages })}</span>
-          <button className="btn-secondary" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>{t('table.next')}</button>
-          <button className="btn-secondary" onClick={() => setPage(totalPages)} disabled={currentPage === totalPages}>{t('table.last')}</button>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm">
+        <div className="text-gray-600 order-2 sm:order-1 text-xs sm:text-sm">
+          {t('common.showing', { from: (currentPage - 1) * pageSize + 1, to: Math.min(currentPage * pageSize, total), total })}
+        </div>
+        <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+          <button
+            className="btn-secondary min-h-0 h-9 px-2 py-1 text-xs sm:h-11 sm:min-h-[44px] sm:px-4 sm:py-2.5 sm:text-sm"
+            onClick={() => setPage(1)}
+            disabled={currentPage === 1}
+          >{t('table.first')}</button>
+          <button
+            className="btn-secondary min-h-0 h-9 px-2 py-1 text-xs sm:h-11 sm:min-h-[44px] sm:px-4 sm:py-2.5 sm:text-sm"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >{t('table.prev')}</button>
+          <span className="px-2 text-xs sm:text-sm">{t('common.page', { n: currentPage, m: totalPages })}</span>
+          <button
+            className="btn-secondary min-h-0 h-9 px-2 py-1 text-xs sm:h-11 sm:min-h-[44px] sm:px-4 sm:py-2.5 sm:text-sm"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >{t('table.next')}</button>
+          <button
+            className="btn-secondary min-h-0 h-9 px-2 py-1 text-xs sm:h-11 sm:min-h-[44px] sm:px-4 sm:py-2.5 sm:text-sm"
+            onClick={() => setPage(totalPages)}
+            disabled={currentPage === totalPages}
+          >{t('table.last')}</button>
         </div>
       </div>
 

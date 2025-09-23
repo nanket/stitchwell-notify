@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Plus,
   LogOut,
@@ -7,8 +7,10 @@ import {
   Scissors,
   Clock,
   CheckCircle,
-  AlertCircle,
-  Database
+  Database,
+  Menu,
+  X,
+  BarChart3
 } from 'lucide-react';
 import useStore, { WORKFLOW_STATES } from '../store/useStore';
 import AdminListView from './AdminListView';
@@ -19,24 +21,31 @@ import { loadDemoData } from '../utils/demoData';
 import { useI18n } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher';
 import MonthlyCompletionCard from './MonthlyCompletionCard';
+import AdminCompletionDetailsModal from './AdminCompletionDetailsModal';
 
 const AdminDashboard = () => {
-  const {
-    currentUser,
-    logout,
-    getAllItems,
-    getMyNotifications,
-    assignItemToWorker
-  } = useStore();
+  const currentUser = useStore(s => s.currentUser);
+  const logout = useStore(s => s.logout);
+  const getAllItems = useStore(s => s.getAllItems);
+  const assignItemToWorker = useStore(s => s.assignItemToWorker);
+  const notifications = useStore(s => s.notifications);
   const { t } = useI18n();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showManageWorkers, setShowManageWorkers] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileMenuOpen]);
 
   const allItems = getAllItems();
-  const notifications = getMyNotifications();
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => n.userName === currentUser && !n.read).length;
 
   // Get statistics for dashboard
   const stats = {
@@ -81,8 +90,50 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center flex-wrap gap-2 sm:gap-4">
+            {/* Mobile actions (create + bell + hamburger) */}
+            <div className="flex items-center gap-2 md:hidden">
+              {/* Create Item (mobile, always visible) */}
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="btn-primary px-3 py-2"
+                aria-label={t('admin.new_item')}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+
+              {/* Notifications (mobile) */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 touch-target text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-6 w-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                {showNotifications && (
+                  <NotificationPanel align="left" onClose={() => setShowNotifications(false)} />
+                )}
+              </div>
+
+              {/* Hamburger */}
+              <button
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                className="p-2 touch-target text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg"
+                aria-label="Menu"
+                aria-controls="admin-mobile-menu"
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
+
+            {/* Actions (desktop) */}
+            <div className="hidden md:flex items-center flex-wrap gap-2 sm:gap-4">
               {/* Demo Data Button */}
               {allItems.length === 0 && (
                 <button
@@ -153,9 +204,32 @@ const AdminDashboard = () => {
         </div>
       </header>
 
+      {/* Mobile menu panel */}
+      {mobileMenuOpen && (
+        <nav id="admin-mobile-menu" aria-label="Mobile menu" className="md:hidden bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
+            {allItems.length === 0 && (
+              <button onClick={handleLoadDemoData} className="btn-secondary w-full justify-start">{t('admin.load_demo')}</button>
+            )}
+            <button onClick={() => { setShowManageWorkers(true); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start">{t('admin.manage_workers')}</button>
+            <div className="flex items-center">
+              <LanguageSwitcher />
+            </div>
+
+            <button onClick={() => { setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
+              <Bell className="w-4 h-4 mr-2" /> {t('notif_panel.title')}
+              {unreadCount > 0 && (
+                <span className="absolute right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">{unreadCount}</span>
+              )}
+            </button>
+            <button onClick={logout} className="btn-secondary w-full justify-start">{t('common.logout')}</button>
+          </div>
+        </nav>
+      )}
+
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 mb-8">
           <div className="card">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -168,14 +242,14 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card ring-1 ring-yellow-200">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
                 <Clock className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">{t('admin.stats_in_progress')}</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.inProgress}</p>
+                <p className="text-3xl font-bold text-yellow-700">{stats.inProgress}</p>
               </div>
             </div>
           </div>
@@ -192,19 +266,27 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="card">
+          <div
+            className="card cursor-pointer hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            role="button"
+            tabIndex={0}
+            onClick={() => setShowDetails(true)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowDetails(true); } }}
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertCircle className="h-6 w-6 text-red-600" />
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <BarChart3 className="h-6 w-6 text-indigo-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('admin.stats_pending')}</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.pending}</p>
+                <p className="text-sm font-medium text-gray-600">{t('admin.analytics')}</p>
+                <p className="text-sm text-gray-500">{t('analytics.details.view')}</p>
               </div>
             </div>
+          </div>
 
           <MonthlyCompletionCard />
-          </div>
+
+
         </div>
 
         {/* Table Only */}
@@ -229,6 +311,9 @@ const AdminDashboard = () => {
       )}
       {showManageWorkers && (
         <AdminManageWorkers onClose={() => setShowManageWorkers(false)} />
+      )}
+      {showDetails && (
+        <AdminCompletionDetailsModal onClose={() => setShowDetails(false)} />
       )}
     </div>
   );
