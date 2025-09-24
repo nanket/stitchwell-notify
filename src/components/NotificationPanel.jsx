@@ -62,11 +62,13 @@ const NotificationPanel = ({ onClose, align = 'right' }) => {
   const unreadCount = myNotifications.filter(n => !n.read).length;
 
   const alignmentClass = align === 'left' ? 'left-0' : 'right-0';
+  const positionClass = `fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:top-12 ${alignmentClass}`;
+
 
   return (
     <div
       ref={panelRef}
-      className={`absolute top-12 ${alignmentClass} w-72 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] max-h-[70vh] overflow-hidden flex flex-col`}
+      className={`${positionClass} w-full sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] max-h-[70vh] overflow-hidden flex flex-col`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -112,8 +114,8 @@ const NotificationPanel = ({ onClose, align = 'right' }) => {
                 <div className="flex items-start space-x-3">
                   {/* Notification Icon */}
                   <div className={`p-2 rounded-lg flex-shrink-0 ${
-                    !notification.read 
-                      ? 'bg-blue-100' 
+                    !notification.read
+                      ? 'bg-blue-100'
                       : 'bg-gray-100'
                   }`}>
                     {!notification.read ? (
@@ -125,17 +127,17 @@ const NotificationPanel = ({ onClose, align = 'right' }) => {
 
                   {/* Notification Content */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${
-                      !notification.read 
-                        ? 'text-gray-900 font-medium' 
+                    <p className={`text-sm break-words whitespace-normal ${
+                      !notification.read
+                        ? 'text-gray-900 font-medium'
                         : 'text-gray-700'
                     }`}>
                       {notification.message}
                     </p>
-                    
-                    <div className="flex items-center space-x-2 mt-1">
+
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Clock className="h-3 w-3 text-gray-400" />
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">
                         {formatDate(notification.timestamp)}
                       </span>
                       {!notification.read && (
