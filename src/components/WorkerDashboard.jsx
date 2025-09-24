@@ -151,24 +151,44 @@ const WorkerDashboard = () => {
         </div>
       </header>
 
-      {/* Mobile menu panel */}
+      {/* Mobile menu overlay */}
       {mobileMenuOpen && (
-        <nav id="worker-mobile-menu" aria-label="Mobile menu" className="md:hidden bg-white border-b border-gray-200 shadow-sm">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
-            <div className="relative">
-              <button onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
-                <Bell className="w-4 h-4 mr-2" /> {t('notif_panel.title')}
-                {unreadCount > 0 && (
-                  <span className="absolute right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">{unreadCount}</span>
-                )}
-              </button>
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <nav
+            id="worker-mobile-menu"
+            aria-label="Mobile menu"
+            className="absolute top-0 left-0 right-0 bg-white shadow-md border-b border-gray-200"
+          >
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-3">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 touch-target text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg"
+                  aria-label="Close menu"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="relative">
+                <button onClick={() => { markAllMyNotificationsAsRead(); setShowNotifications(!showNotifications); setMobileMenuOpen(false); }} className="btn-secondary w-full justify-start relative">
+                  <Bell className="w-4 h-4 mr-2" /> {t('notif_panel.title')}
+                  {unreadCount > 0 && (
+                    <span className="absolute right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs">{unreadCount}</span>
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center">
+                <LanguageSwitcher />
+              </div>
+              <button onClick={logout} className="btn-secondary w-full justify-start">{t('common.logout')}</button>
             </div>
-            <div className="flex items-center">
-              <LanguageSwitcher />
-            </div>
-            <button onClick={logout} className="btn-secondary w-full justify-start">{t('common.logout')}</button>
-          </div>
-        </nav>
+          </nav>
+        </div>
       )}
 
       {/* Main Content */}
