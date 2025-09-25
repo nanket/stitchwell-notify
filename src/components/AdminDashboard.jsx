@@ -250,7 +250,7 @@ const AdminDashboard = () => {
 
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <div className="card">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -270,7 +270,7 @@ const AdminDashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">{t('admin.stats_in_progress')}</p>
-                <p className="text-3xl font-bold text-yellow-700">{stats.inProgress}</p>
+                <p className="text-2xl font-semibold text-yellow-700">{stats.inProgress}</p>
               </div>
             </div>
           </div>
@@ -306,8 +306,6 @@ const AdminDashboard = () => {
           </div>
 
           <MonthlyCompletionCard />
-
-
         </div>
 
         {/* Table Only */}

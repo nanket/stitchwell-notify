@@ -433,12 +433,24 @@ const useStore = create(
             assignedTo: cuttingAssignee,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            history: [{
-              status: WORKFLOW_STATES.AWAITING_CUTTING,
-              assignedTo: cuttingAssignee,
-              timestamp: new Date().toISOString(),
-              action: 'Item created'
-            }]
+            history: [
+              {
+                status: WORKFLOW_STATES.AWAITING_CUTTING,
+                assignedTo: 'Admin',
+                timestamp: new Date().toISOString(),
+                action: tGlobal('history.actions.created_by_admin'),
+                actionCode: 'created_by_admin',
+                actionParams: { by: 'Admin' }
+              },
+              {
+                status: WORKFLOW_STATES.AWAITING_CUTTING,
+                assignedTo: cuttingAssignee,
+                timestamp: new Date().toISOString(),
+                action: tGlobal('history.actions.assigned_for_stage', { name: cuttingAssignee, stage: tGlobal('history.stage.cutting') }),
+                actionCode: 'assigned_for_stage',
+                actionParams: { name: cuttingAssignee, stage: 'cutting' }
+              }
+            ]
           };
           const ref = await addDoc(collection(db, 'clothItems'), payload);
           // Push notification via backend
@@ -466,9 +478,18 @@ const useStore = create(
 
         try {
           const db = await ensureDb();
+          const prevStageKey = stageFromStatus(item.status) || '';
+          const stageLabel = prevStageKey ? tGlobal(`history.stage.${prevStageKey}`) : item.status;
           const newHistory = [
             ...item.history,
-            { status: transition.nextState, assignedTo: transition.assignedTo, timestamp: new Date().toISOString(), action: `Completed ${item.status}` }
+            {
+              status: transition.nextState,
+              assignedTo: transition.assignedTo,
+              timestamp: new Date().toISOString(),
+              action: tGlobal('history.actions.completed_stage', { stage: stageLabel }),
+              actionCode: 'completed_stage',
+              actionParams: { stage: prevStageKey }
+            }
           ];
           await updateDoc(doc(db, 'clothItems', itemId), {
             status: transition.nextState,
@@ -497,9 +518,18 @@ const useStore = create(
           const db = await ensureDb();
           const isTailorAssignment = item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT;
           const nextStatus = isTailorAssignment ? WORKFLOW_STATES.AWAITING_STITCHING : item.status;
+          const stageKey = stageFromStatus(nextStatus) || '';
+          const stageLabel2 = stageKey ? tGlobal(`history.stage.${stageKey}`) : '';
           const newHistory = [
             ...item.history,
-            { status: nextStatus, assignedTo: workerName, timestamp: new Date().toISOString(), action: `Assigned to ${workerName}` }
+            {
+              status: nextStatus,
+              assignedTo: workerName,
+              timestamp: new Date().toISOString(),
+              action: tGlobal('history.actions.assigned_for_stage', { name: workerName, stage: stageLabel2 || roleFromStage(stageKey) || '' }),
+              actionCode: 'assigned_for_stage',
+              actionParams: { name: workerName, stage: stageKey }
+            }
           ];
           await updateDoc(doc(db, 'clothItems', itemId), {
             status: nextStatus,

@@ -10,12 +10,20 @@ export const DEMO_ITEMS = [
     assignedTo: 'Feroz',
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    history: [{
-      status: WORKFLOW_STATES.AWAITING_CUTTING,
-      assignedTo: 'Feroz',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      action: 'Item created'
-    }]
+    history: [
+      {
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Admin',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        action: 'Item created by Admin'
+      },
+      {
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Feroz',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        action: 'Assigned to Feroz for cutting'
+      }
+    ]
   },
   {
     id: 'demo-2',
@@ -28,15 +36,15 @@ export const DEMO_ITEMS = [
     history: [
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
-        assignedTo: 'Feroz',
+        assignedTo: 'Admin',
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        action: 'Item created'
+        action: 'Item created by Admin'
       },
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
-        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Threading'
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        action: 'Assigned to Feroz for cutting'
       }
     ]
   },
@@ -51,21 +59,27 @@ export const DEMO_ITEMS = [
     history: [
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
-        assignedTo: 'Feroz',
+        assignedTo: 'Admin',
         timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        action: 'Item created'
+        action: 'Item created by Admin'
       },
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        action: 'Assigned to Feroz for cutting'
+      },
+      {
+        status: WORKFLOW_STATES.AWAITING_THREAD_MATCHING,
+        assignedTo: 'Abdul',
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Threading'
+        action: 'Cutting completed'
       },
       {
         status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Cutting'
+        action: 'Thread matching completed'
       }
     ]
   },
@@ -80,21 +94,21 @@ export const DEMO_ITEMS = [
     history: [
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
-        assignedTo: 'Feroz',
+        assignedTo: 'Admin',
         timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        action: 'Item created'
+        action: 'Item created by Admin'
       },
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Threading'
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        action: 'Assigned to Feroz for cutting'
       },
       {
         status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Cutting'
+        action: 'Thread matching completed'
       },
       {
         status: WORKFLOW_STATES.AWAITING_STITCHING,
@@ -115,21 +129,27 @@ export const DEMO_ITEMS = [
     history: [
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Admin',
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        action: 'Item created by Admin'
+      },
+      {
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        action: 'Item created'
+        action: 'Assigned to Feroz for cutting'
       },
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Threading'
+        action: 'Cutting completed'
       },
       {
         status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,
         assignedTo: 'Gaju',
         timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Cutting'
+        action: 'Thread matching completed'
       },
       {
         status: WORKFLOW_STATES.AWAITING_STITCHING,
@@ -156,15 +176,21 @@ export const DEMO_ITEMS = [
     history: [
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
+        assignedTo: 'Admin',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        action: 'Item created by Admin'
+      },
+      {
+        status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        action: 'Item created'
+        action: 'Assigned to Feroz for cutting'
       },
       {
         status: WORKFLOW_STATES.AWAITING_CUTTING,
         assignedTo: 'Feroz',
         timestamp: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
-        action: 'Completed Awaiting Threading'
+        action: 'Cutting completed'
       },
       {
         status: WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT,

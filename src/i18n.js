@@ -293,6 +293,23 @@ const translations = {
         }
       }
     }
+    ,history: {
+      actions: {
+        created_by_admin: 'Item created by Admin',
+        assigned_for_stage: 'Assigned to {name} for {stage}',
+        completed_stage: '{stage} completed'
+      },
+      stage: {
+        cutting: 'cutting',
+        thread_matching: 'thread matching',
+        tailor_assignment: 'tailor assignment',
+        stitching: 'stitching',
+        kaach: 'kaach',
+        ironing: 'ironing',
+        packaging: 'packaging'
+      }
+    }
+
   },
   hi: {
     common: {
@@ -562,6 +579,23 @@ const translations = {
         }
       }
     }
+    ,history: {
+      actions: {
+        created_by_admin: 'एडमिन द्वारा आइटम बनाया गया',
+        assigned_for_stage: '{stage} के लिए {name} को असाइन किया गया',
+        completed_stage: '{stage} पूर्ण'
+      },
+      stage: {
+        cutting: 'कटिंग',
+        thread_matching: 'धागा मिलान',
+        tailor_assignment: 'टेलर असाइनमेंट',
+        stitching: 'सिलाई',
+        kaach: 'काँच',
+        ironing: 'इस्त्री',
+        packaging: 'पैकिंग'
+      }
+    }
+
   }
 };
 
