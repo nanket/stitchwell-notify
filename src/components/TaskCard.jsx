@@ -96,7 +96,7 @@ const TaskCard = ({ task, onComplete }) => {
               {trStatus(task.status)}
             </span>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <User className="h-4 w-4 text-gray-400" />
             <span className="text-sm text-gray-600">
@@ -111,6 +111,17 @@ const TaskCard = ({ task, onComplete }) => {
             </span>
           </div>
         </div>
+
+        {/* Photos */}
+        {Array.isArray(task.photoUrls) && task.photoUrls.length > 0 && (
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            {task.photoUrls.map((url, idx) => (
+              <a key={idx} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded border">
+                <img src={url} alt="item" className="w-full h-full object-cover" loading="lazy" />
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
-import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, arrayUnion, arrayRemove, writeBatch, limit } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, getDoc, arrayUnion, arrayRemove, writeBatch, limit } from 'firebase/firestore';
 import { initFirebase } from '../firebase';
 import { tGlobal, translateStatus, translateClothType } from '../i18n';
 
@@ -214,6 +214,33 @@ const initialWorkers = {
 export const CLOTH_TYPES = ['Shirt', 'Pant', 'Kurta', 'Safari'];
 
 // Compute next transition dynamically using current workers and item type
+
+// Helpers for Firestore-backed users
+function _baseUsername(name) {
+  return String(name || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+async function _generateUniqueUsername(db, base) {
+  let uname = base || 'user';
+  let i = 0;
+  // Limit attempts to avoid infinite loop
+  while (i < 100) {
+    const snap = await getDoc(doc(db, 'users', uname));
+    if (!snap.exists()) return uname;
+    i += 1;
+    uname = `${base}${i}`;
+  }
+  return `${base}${Date.now().toString(36)}`;
+}
+function _generatePassword(username) {
+  // Per requirement: username + 1234
+  return `${username}1234`;
+}
+
 const computeNextTransition = (item, workers) => {
   const status = item.status;
   const type = (item.type || '').toLowerCase();
@@ -272,9 +299,27 @@ const useStore = create(
         } catch (_) {}
       },
 
-      // Simple credential-based login (username: lowercase worker name w/o spaces)
-      loginWithCredentials: (username, password) => {
-        const u = String(username || '').toLowerCase().replace(/\s+/g, '');
+      // Credential-based login backed by Firestore 'users' collection.
+      // Falls back to legacy hardcoded users for backward compatibility.
+      loginWithCredentials: async (username, password) => {
+        try {
+          const db = await ensureDb();
+          const u = String(username || '').toLowerCase().replace(/\s+/g, '');
+          const userDoc = await getDoc(doc(db, 'users', u));
+          if (userDoc.exists()) {
+            const data = userDoc.data() || {};
+            if (String(password || '') !== String(data.password || '')) {
+              toast.error(tGlobal('auth.invalid_login'));
+              return false;
+            }
+            get().setCurrentUser(data.name || u, data.role || null);
+            return true;
+          }
+        } catch (e) {
+          // proceed to legacy fallback
+        }
+        // Legacy fallback (hardcoded users)
+        const u2 = String(username || '').toLowerCase().replace(/\s+/g, '');
         const users = {
           admin:        { name: 'Admin', role: USER_ROLES.ADMIN,              password: 'admin1234' },
           feroz:        { name: 'Feroz', role: USER_ROLES.CUTTING_WORKER,     password: 'feroz1234' },
@@ -288,12 +333,8 @@ const useStore = create(
           shambhu:      { name: 'Shambhu', role: USER_ROLES.TAILOR,           password: 'shambhu1234' },
           abdulkadir:   { name: 'Abdul Kadir', role: USER_ROLES.IRONING_WORKER, password: 'abdulkadir1234' },
         };
-        const entry = users[u];
-        if (!entry) {
-          toast.error(tGlobal('auth.invalid_login'));
-          return false;
-        }
-        if (String(password || '') !== entry.password) {
+        const entry = users[u2];
+        if (!entry || String(password || '') !== entry.password) {
           toast.error(tGlobal('auth.invalid_login'));
           return false;
         }
@@ -343,13 +384,32 @@ const useStore = create(
       // Workers state and management
       workers: initialWorkers,
       addWorker: async (role, name) => {
-        if (!role || !name) return;
+        if (!role || !name) return null;
         try {
           const db = await ensureDb();
+          // Generate username/password
+          const base = _baseUsername(name);
+          const username = await _generateUniqueUsername(db, base);
+          const password = _generatePassword(username);
+
+          // Create user document (username as doc id)
+          await setDoc(doc(db, 'users', username), {
+            username,
+            name,
+            role,
+            password,
+            createdAt: serverTimestamp()
+          }, { merge: true });
+
+          // Also add to role list (for assignment defaults/UI)
           await setDoc(doc(db, 'workers', role), { list: arrayUnion(name), updatedAt: serverTimestamp() }, { merge: true });
+
           toast.success(tGlobal('store.added_to_role', { name, role }));
+          return { username, password };
         } catch (e) {
+          console.error('addWorker error', e);
           toast.error(tGlobal('store.failed_add_worker'));
+          return null;
         }
       },
       removeWorker: async (role, name) => {
@@ -421,7 +481,7 @@ const useStore = create(
       },
 
       // Create new cloth item (Admin only)
-      createClothItem: async (type, billNumber) => {
+      createClothItem: async (type, billNumber, photoUrls = []) => {
         try {
           const db = await ensureDb();
           const workers = get().workers;
@@ -431,6 +491,7 @@ const useStore = create(
             billNumber,
             status: WORKFLOW_STATES.AWAITING_CUTTING,
             assignedTo: cuttingAssignee,
+            photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             history: [
@@ -607,26 +668,26 @@ const useStore = create(
             timestamp: serverTimestamp(),
             read: false
           });
-          
+
           // Add to local state with the real Firestore ID
-          const notif = { 
-            id: docRef.id, 
-            userName, 
-            message, 
-            timestamp: new Date().toISOString(), 
-            read: false 
+          const notif = {
+            id: docRef.id,
+            userName,
+            message,
+            timestamp: new Date().toISOString(),
+            read: false
           };
           set(state => ({ notifications: [notif, ...state.notifications] }));
         } catch (e) {
           console.error('Failed to add notification:', e);
           // Fallback: add to local state with temp ID
           const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const notif = { 
-            id: tempId, 
-            userName, 
-            message, 
-            timestamp: new Date().toISOString(), 
-            read: false 
+          const notif = {
+            id: tempId,
+            userName,
+            message,
+            timestamp: new Date().toISOString(),
+            read: false
           };
           set(state => ({ notifications: [notif, ...state.notifications] }));
         }
@@ -679,14 +740,14 @@ const useStore = create(
       // Mark notification as read (best-effort Firestore update)
       markNotificationAsRead: async (notificationId) => {
         if (!notificationId) return;
-        
+
         // Local optimistic update
         set(state => ({
           notifications: state.notifications.map(n =>
             n.id === notificationId ? { ...n, read: true } : n
           )
         }));
-        
+
         // Update Firestore if it's not a temporary ID
         if (!notificationId.startsWith('temp_')) {
           try {
@@ -703,24 +764,24 @@ const useStore = create(
         const state = get();
         const me = state.currentUser;
         if (!me) return;
-        
+
         const myUnreadNotifications = (state.notifications || [])
           .filter(n => n.userName === me && !n.read && n.id);
-        
+
         if (myUnreadNotifications.length === 0) return;
-        
+
         const allIds = myUnreadNotifications.map(n => n.id);
         const firestoreIds = myUnreadNotifications
           .filter(n => !n.id.startsWith('temp_'))
           .map(n => n.id);
-        
+
         // Local optimistic update for all notifications
         set(state => ({
           notifications: state.notifications.map(n =>
             allIds.includes(n.id) ? { ...n, read: true } : n
           )
         }));
-        
+
         // Firestore batch update for real documents
         if (firestoreIds.length > 0) {
           try {

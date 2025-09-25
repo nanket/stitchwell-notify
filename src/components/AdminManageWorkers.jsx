@@ -17,11 +17,13 @@ const AdminManageWorkers = ({ onClose }) => {
   const { t, trRole } = useI18n();
   const { workers, addWorker, removeWorker, setDefaultWorker } = useStore();
   const [inputs, setInputs] = useState({});
+  const [lastCreds, setLastCreds] = useState({});
 
-  const handleAdd = (role) => {
+  const handleAdd = async (role) => {
     const name = (inputs[role] || '').trim();
     if (!name) return;
-    addWorker(role, name);
+    const creds = await addWorker(role, name);
+    if (creds) setLastCreds((s) => ({ ...s, [role]: creds }));
     setInputs((s) => ({ ...s, [role]: '' }));
   };
 
@@ -50,6 +52,15 @@ const AdminManageWorkers = ({ onClose }) => {
                   </button>
                 </div>
               </div>
+              {lastCreds[role] && (
+                <div className="px-4 py-3 bg-amber-50 border-b border-amber-200 text-amber-900 text-sm">
+                  <div className="font-medium mb-1">{t('workers.registered_creds')}</div>
+                  <div className="flex flex-wrap gap-4">
+                    <div><span className="font-semibold">{t('workers.username')}:</span> <code className="px-1 py-0.5 bg-white rounded border">{lastCreds[role].username}</code></div>
+                    <div><span className="font-semibold">{t('workers.password')}:</span> <code className="px-1 py-0.5 bg-white rounded border">{lastCreds[role].password}</code></div>
+                  </div>
+                </div>
+              )}
               <div className="p-4">
                 {(workers[role] || []).length === 0 ? (
                   <p className="text-sm text-gray-500">{t('workers.none_yet')}</p>

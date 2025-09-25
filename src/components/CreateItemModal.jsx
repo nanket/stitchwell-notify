@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Package, Hash } from 'lucide-react';
+import { X, Package, Hash, Camera } from 'lucide-react';
 import useStore, { CLOTH_TYPES } from '../store/useStore';
 import { useI18n } from '../i18n';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const CreateItemModal = ({ onClose }) => {
   const { t, trType } = useI18n();
@@ -11,7 +12,8 @@ const CreateItemModal = ({ onClose }) => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [files, setFiles] = useState([]);
+
   const { createClothItem, getAllItems } = useStore();
   const existingItems = getAllItems();
 
@@ -34,15 +36,27 @@ const CreateItemModal = ({ onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      await createClothItem(formData.type, formData.billNumber.trim());
+      // Upload images first (if any)
+      const storage = getStorage();
+      const urls = [];
+      for (const f of files) {
+        const safeName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${(f.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const path = `cloth-items/${formData.billNumber.trim()}/${safeName}`;
+        const ref = storageRef(storage, path);
+        await uploadBytes(ref, f);
+        const url = await getDownloadURL(ref);
+        urls.push(url);
+      }
+
+      await createClothItem(formData.type, formData.billNumber.trim(), urls);
       onClose();
     } catch (error) {
       console.error('Error creating item:', error);
@@ -155,6 +169,27 @@ const CreateItemModal = ({ onClose }) => {
             {errors.billNumber && (
               <p className="mt-2 text-sm text-red-600">{errors.billNumber}</p>
             )}
+          </div>
+
+          {/* Photos */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('create_item.photos') || 'Photos (optional)'}
+            </label>
+            <div className="flex items-center gap-3">
+              <label className="btn-secondary cursor-pointer inline-flex items-center">
+                <Camera className="h-4 w-4 mr-2" /> {t('create_item.add_photo') || 'Add photo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                />
+              </label>
+              <div className="text-xs text-gray-500">{files.length > 0 ? `${files.length} selected` : t('create_item.photo_hint') || 'Use camera or gallery'}</div>
+            </div>
           </div>
 
           {/* Form Actions */}

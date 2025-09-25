@@ -10,9 +10,9 @@ const LoginScreen = () => {
   const loginWithCredentials = useStore(s => s.loginWithCredentials);
   const { t } = useI18n();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    loginWithCredentials(username, password);
+    await loginWithCredentials(username, password);
   };
 
   return (

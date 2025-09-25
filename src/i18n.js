@@ -129,7 +129,10 @@ const translations = {
       add_placeholder: 'Add {role} name',
       none_yet: 'No workers yet.',
       default: 'Default',
-      make_default: 'Make default'
+      make_default: 'Make default',
+      registered_creds: 'Registered. Share these credentials with the worker:',
+      username: 'Username',
+      password: 'Password'
     },
     create_item: {
       title: 'Create New Item',
@@ -416,7 +419,10 @@ const translations = {
       add_placeholder: '{role} का नाम जोड़ें',
       none_yet: 'अभी कोई वर्कर नहीं।',
       default: 'डिफ़ॉल्ट',
-      make_default: 'डिफ़ॉल्ट बनाएँ'
+      make_default: 'डिफ़ॉल्ट बनाएँ',
+      registered_creds: 'रजिस्टर हो गया। ये लॉगिन विवरण वर्कर के साथ साझा करें:',
+      username: 'यूज़रनेम',
+      password: 'पासवर्ड'
     },
     create_item: {
       title: 'नया आइटम बनाएँ',
