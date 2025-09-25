@@ -220,7 +220,8 @@ function _baseUsername(name) {
   return String(name || '')
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/\p{Diacritic}/gu, '')
+    // Remove diacritics using explicit Unicode range for combining marks (Android Chrome safe)
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '')
     .replace(/[^a-z0-9]/g, '');
 }
