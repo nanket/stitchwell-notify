@@ -172,7 +172,7 @@ const CreateItemModal = ({ onClose }) => {
           </div>
 
           {/* Photos */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('create_item.photos') || 'Photos (optional)'}
             </label>
@@ -190,7 +190,7 @@ const CreateItemModal = ({ onClose }) => {
               </label>
               <div className="text-xs text-gray-500">{files.length > 0 ? `${files.length} selected` : t('create_item.photo_hint') || 'Use camera or gallery'}</div>
             </div>
-          </div>
+          </div> */}
 
           {/* Form Actions */}
           <div className="flex space-x-3 pt-4">
