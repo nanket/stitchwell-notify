@@ -359,7 +359,7 @@ const translations = {
       stats_total: 'कुल आइटम',
       stats_in_progress: 'प्रगति पर',
       stats_completed: 'पूर्ण',
-      stats_pending: 'असाइनमेंट लंबित',
+      stats_pending: 'असाइनमेंट बाकी',
       table_title: 'कार्यप्रवाह आइटम (तालिका)',
       table_subtitle: 'बड़े डेटा सेट के लिए फ़िल्टर, सॉर्ट और पेजिनेशन करें',
       analytics: 'विश्लेषण'
@@ -500,13 +500,13 @@ const translations = {
       Safari: 'सफारी'
     },
     statuses: {
-      'Awaiting Cutting': 'कटिंग लंबित',
-      'Awaiting Thread Matching': 'धागा मिलान लंबित',
-      'Awaiting Tailor Assignment': 'टेलर असाइनमेंट लंबित',
-      'Awaiting Stitching': 'सिलाई लंबित',
-      'Awaiting Kaach': 'काँच (बटनिंग) लंबित',
-      'Awaiting Ironing': 'इस्त्री लंबित',
-      'Awaiting Packaging': 'पैकिंग लंबित',
+      'Awaiting Cutting': 'कटिंग बाकी',
+      'Awaiting Thread Matching': 'धागा मिलान बाकी',
+      'Awaiting Tailor Assignment': 'टेलर असाइनमेंट बाकी',
+      'Awaiting Stitching': 'सिलाई बाकी',
+      'Awaiting Kaach': 'काँच (बटनिंग) बाकी',
+      'Awaiting Ironing': 'इस्त्री बाकी',
+      'Awaiting Packaging': 'पैकिंग बाकी',
       Ready: 'तैयार'
     },
     store: {
