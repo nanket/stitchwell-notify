@@ -11,7 +11,7 @@ import {
   History
 } from 'lucide-react';
 
-const TaskCard = ({ task, onComplete }) => {
+const TaskCard = ({ task, onComplete, compact = false }) => {
   const { t, trStatus, trType } = useI18n();
   const [showHistory, setShowHistory] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -66,6 +66,62 @@ const TaskCard = ({ task, onComplete }) => {
     }
   };
 
+  // Compact view rendering
+  if (compact) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <div className="p-1.5 bg-gray-100 rounded-lg">
+                <Package className="h-4 w-4 text-gray-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-medium text-gray-900 truncate">
+                    {t('card.bill')}: {task.billNumber}
+                  </h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(task.type)}`}>
+                    {((Number(task?.quantity) || 1) > 1) ? `${Number(task.quantity)}x ${trType(task.type)}` : trType(task.type)}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-4 mt-1">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                    <span className={`text-xs font-medium ${getStatusColor(task.status)}`}>
+                      {trStatus(task.status)}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {formatDate(task.updatedAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleComplete}
+              disabled={isCompleting}
+              className="btn-success px-3 py-1.5 text-xs ml-3 flex-shrink-0"
+            >
+              {isCompleting ? (
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>{t('card.completing')}</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1">
+                  <CheckCircle className="h-3 w-3" />
+                  <span>{t('card.mark_complete')}</span>
+                </div>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Normal view rendering
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
       {/* Main Content */}

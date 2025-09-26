@@ -124,7 +124,18 @@ const translations = {
       stats_in_progress: 'In Progress',
       stats_notifications: 'Notifications',
       section_title: 'Your Assigned Tasks',
-      section_subtitle: 'Work on your current assignments below'
+      section_subtitle: 'Work on your current assignments below',
+      search_placeholder: 'Search by bill #, type, customer, or status...',
+      compact_view: 'Compact View',
+      normal_view: 'Normal View',
+      filter_by_status: 'Filter by Status',
+      sort_by: 'Sort by',
+      sort_date_desc: 'Newest First',
+      sort_date_asc: 'Oldest First',
+      sort_bill: 'Bill Number',
+      sort_status: 'Status',
+      all_statuses: 'All Statuses',
+      clear_search: 'Clear search'
     },
     workers: {
       manage_title: 'Manage Workers',
@@ -432,7 +443,18 @@ const translations = {
       stats_in_progress: 'प्रगति पर',
       stats_notifications: 'सूचनाएँ',
       section_title: 'आपको असाइन किए गए कार्य',
-      section_subtitle: 'अपने मौजूदा कार्य यहाँ पूरा करें'
+      section_subtitle: 'अपने मौजूदा कार्य यहाँ पूरा करें',
+      search_placeholder: 'बिल #, प्रकार, ग्राहक या स्थिति से खोजें...',
+      compact_view: 'संक्षिप्त दृश्य',
+      normal_view: 'सामान्य दृश्य',
+      filter_by_status: 'स्थिति के अनुसार फ़िल्टर करें',
+      sort_by: 'इसके अनुसार क्रमबद्ध करें',
+      sort_date_desc: 'नवीनतम पहले',
+      sort_date_asc: 'पुराने पहले',
+      sort_bill: 'बिल नंबर',
+      sort_status: 'स्थिति',
+      all_statuses: 'सभी स्थितियाँ',
+      clear_search: 'खोज साफ़ करें'
     },
     workers: {
       manage_title: 'कर्मचारियों का प्रबंधन',
