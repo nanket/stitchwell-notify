@@ -37,8 +37,6 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const [expanded, setExpanded] = useState({});
   const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-  const [groupByBill, setGroupByBill] = useState(false);
-  const [expandedBills, setExpandedBills] = useState({});
 
 
   const assignees = useMemo(() => {
@@ -128,38 +126,11 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         const stageLabel = stageKey ? t(`history.stage.${stageKey}`) : trStatus(h?.status);
         return t('history.actions.completed_stage', { stage: stageLabel });
       }
-    } catch {}
+    } catch { /* empty */ }
     return h?.action || '';
   };
 
-  const billGroups = useMemo(() => {
-    const map = new Map();
-    filtered.forEach(i => {
-      const key = String(i.billNumber || '');
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(i);
-    });
-    const toMs = (v) => {
-      if (!v) return 0;
-      try {
-        const d = typeof v?.toDate === 'function' ? v.toDate() : new Date(v);
-        return isNaN(d.getTime()) ? 0 : d.getTime();
-      } catch { return 0; }
-    };
-    const arr = Array.from(map.entries()).map(([bill, items]) => {
-      const countsByType = items.reduce((acc, it) => {
-        const k = it.type || '';
-        const q = Number(it?.quantity) || 1;
-        acc[k] = (acc[k] || 0) + q;
-        return acc;
-      }, {});
-      const readyCount = items.filter(it => it.status === WORKFLOW_STATES.READY).length;
-      const latestUpdatedAt = items.reduce((max, it) => Math.max(max, toMs(it.updatedAt)), 0);
-      const totalQty = items.reduce((sum, it) => sum + (Number(it?.quantity) || 1), 0);
-      return { bill, items, countsByType, readyCount, total: totalQty, latestUpdatedAt };
-    });
-    return arr.sort((a, b) => (a.latestUpdatedAt - b.latestUpdatedAt) * (sortDir === 'asc' ? 1 : -1));
-  }, [filtered, sortDir]);
+  
 
 
   const handleDeleteClick = (item) => {
@@ -174,6 +145,11 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   };
 
   const isAdmin = currentUserRole === USER_ROLES.ADMIN;
+  
+  // Check if any items have customer names to determine if we should show the customer column
+  const hasCustomerNames = useMemo(() => {
+    return items.some(item => item.customerName && item.customerName.trim());
+  }, [items]);
 
   return (
     <div className="space-y-4">
@@ -228,6 +204,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
             <tr className="border-b">
               <th className="px-2 sm:px-3 py-2 text-left w-24 sm:w-36"><SortHeader label={t('table.bill')} sortKey="billNumber" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
               <th className="px-2 sm:px-3 py-2 text-left w-20 sm:w-28"><SortHeader label={t('table.type')} sortKey="type" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              {hasCustomerNames && <th className="px-2 sm:px-3 py-2 text-left w-20 sm:w-40"><SortHeader label={t('table.customer') || 'Customer'} sortKey="customerName" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>}
               <th className="px-2 sm:px-3 py-2 text-left hidden sm:table-cell"><SortHeader label={t('table.status')} sortKey="status" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
               <th className="px-2 sm:px-3 py-2 text-left w-24 sm:w-48"><SortHeader label={t('table.assigned_to')} sortKey="assignedTo" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
               <th className="px-2 sm:px-3 py-2 text-left w-32 sm:w-56 hidden sm:table-cell"><SortHeader label={t('table.updated')} sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
@@ -238,7 +215,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
           <tbody>
             {pageItems.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-gray-500 text-sm">{t('table.empty')}</td>
+                <td colSpan={isAdmin ? (hasCustomerNames ? 8 : 7) : (hasCustomerNames ? 7 : 6)} className="text-center py-10 text-gray-500 text-sm">{t('table.empty')}</td>
               </tr>
             ) : pageItems.map(item => (
               <React.Fragment key={item.id}>
@@ -254,6 +231,11 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                       {((Number(item?.quantity) || 1) > 1) ? `${Number(item.quantity)}x ${trType(item.type)}` : trType(item.type)}
                     </div>
                   </td>
+                  {hasCustomerNames && (
+                    <td className="px-2 sm:px-3 py-2 text-xs sm:text-sm">
+                      <span className="truncate">{item.customerName || '—'}</span>
+                    </td>
+                  )}
                   <td className="px-2 sm:px-3 py-2 text-xs sm:text-sm hidden sm:table-cell">{trStatus(item.status)}</td>
                   <td className="px-2 sm:px-3 py-2">
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -370,7 +352,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
 
                 {isAdmin && expanded[item.id] && (
                   <tr className="bg-gray-50" id={`history-${item.id}`}>
-                    <td colSpan={isAdmin ? 7 : 6} className="px-2 sm:px-3 py-3">
+                    <td colSpan={isAdmin ? (hasCustomerNames ? 8 : 7) : (hasCustomerNames ? 7 : 6)} className="px-2 sm:px-3 py-3">
                       <div className="rounded-lg border bg-white p-3 sm:p-4">
                         <div className="mb-2 text-sm font-medium text-gray-700">{t('table.history') || 'History'}</div>
                         <ol className="relative pl-4 sm:pl-5 before:absolute before:left-1 before:top-1 before:bottom-1 before:w-px before:bg-gray-200">

@@ -269,9 +269,7 @@ const computeNextTransition = (item, workers) => {
 };
 
 // Generate unique ID for cloth items
-const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-};
+
 
 const useStore = create(
   devtools(
@@ -484,7 +482,7 @@ const useStore = create(
       // Create new cloth item (Admin only)
       // images: array of { fullUrl, thumbUrl, path?, thumbPath? }
       // For backward compatibility we also populate photoUrls
-      createClothItem: async (type, billNumber, images = [], quantity = 1) => {
+      createClothItem: async (type, billNumber, images = [], quantity = 1, customerName = null) => {
         try {
           const db = await ensureDb();
           const workers = get().workers;
@@ -496,7 +494,7 @@ const useStore = create(
             billNumber,
             status: WORKFLOW_STATES.AWAITING_CUTTING,
             quantity: Number(quantity) || 1,
-
+            customerName: customerName || null,
             assignedTo: cuttingAssignee,
             images: imgs,
             photoUrls,

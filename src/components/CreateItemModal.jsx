@@ -9,7 +9,8 @@ const CreateItemModal = ({ onClose }) => {
   const [formData, setFormData] = useState({
     type: '',
     billNumber: '',
-    quantity: 1
+    quantity: 1,
+    customerName: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +91,7 @@ const CreateItemModal = ({ onClose }) => {
       for (const f of files) {
         // Build safe filename and paths
         const base = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-        const ext = (f.name?.split?.('.')?.pop?.() || 'jpg').toLowerCase();
+        const ext = (f.name && f.name.split && f.name.split('.').pop && f.name.split('.').pop() || 'jpg').toLowerCase();
         const safeName = `${base}_${(f.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
         const fullPath = `cloth-items/${bill}/${safeName}`;
         const thumbPath = `cloth-items/${bill}/_thumbs/${base}.jpg`;
@@ -126,7 +127,7 @@ const CreateItemModal = ({ onClose }) => {
         setUploadProgress({ done, total, percent: Math.round((done / Math.max(1, total)) * 100) });
       }
 
-      await createClothItem(formData.type, bill, images, Number(formData.quantity) || 1);
+      await createClothItem(formData.type, bill, images, Number(formData.quantity) || 1, formData.customerName.trim() || null);
       onClose();
     } catch (error) {
       console.error('Error creating item:', error);
@@ -240,6 +241,20 @@ const CreateItemModal = ({ onClose }) => {
             {errors.billNumber && (
               <p className="mt-2 text-sm text-red-600">{errors.billNumber}</p>
             )}
+          </div>
+
+          {/* Customer Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('create_item.customer_name') || 'Customer Name (Optional)'}
+            </label>
+            <input
+              type="text"
+              value={formData.customerName}
+              onChange={(e) => handleInputChange('customerName', e.target.value)}
+              className="input"
+              placeholder={t('create_item.customer_placeholder') || 'Enter customer name'}
+            />
           </div>
 
 

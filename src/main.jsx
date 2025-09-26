@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { I18nProvider } from './i18n'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // Register Firebase Messaging service worker and request notification permission
 if ('serviceWorker' in navigator) {
@@ -16,8 +17,10 @@ if ('serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <I18nProvider>
-      <App />
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <App />
+      </I18nProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

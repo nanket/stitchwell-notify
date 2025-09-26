@@ -29,8 +29,8 @@ function App() {
         if (token) registerFcmToken(currentUser, token);
         try {
           onMessageListener((payload) => {
-            const title = payload.notification?.title || t('store.push_task');
-            const body = payload.notification?.body || t('store.push_update');
+            const title = (payload.notification && payload.notification.title) || t('store.push_task');
+            const body = (payload.notification && payload.notification.body) || t('store.push_update');
             addNotification(currentUser, `${title}: ${body}`);
           });
         } catch (_) {}
