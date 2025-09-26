@@ -555,15 +555,28 @@ const useStore = create(
               timestamp: new Date().toISOString(),
               action: tGlobal('history.actions.completed_stage', { stage: stageLabel }),
               actionCode: 'completed_stage',
-              actionParams: { stage: prevStageKey }
+              actionParams: { stage: prevStageKey },
+              actor: state.currentUser
             }
           ];
-          await updateDoc(doc(db, 'clothItems', itemId), {
+          const updateData = {
             status: transition.nextState,
             assignedTo: transition.assignedTo,
             updatedAt: serverTimestamp(),
             history: newHistory
-          });
+          };
+
+          // Add completion tracking when item reaches Ready status
+          if (transition.nextState === WORKFLOW_STATES.READY) {
+            const completionTimestamp = new Date();
+            updateData.completedAt = completionTimestamp;
+            updateData.completedBy = state.currentUser;
+            updateData.completionMonth = completionTimestamp.getMonth() + 1; // 1-12
+            updateData.completionYear = completionTimestamp.getFullYear();
+            updateData.completionMonthYear = `${completionTimestamp.getFullYear()}-${String(completionTimestamp.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM format for easy querying
+          }
+
+          await updateDoc(doc(db, 'clothItems', itemId), updateData);
           if (transition.assignedTo) {
             const typeLabel = translateClothType(String(item.type || '').charAt(0).toUpperCase() + String(item.type || '').slice(1).toLowerCase());
             const nextStage = stageFromStatus(transition.nextState);
@@ -838,11 +851,30 @@ const useStore = create(
                 ...h,
                 timestamp: toISO(h.timestamp) || h.timestamp || null
               })) : [];
+              const createdAt = toISO(data.createdAt);
+              const updatedAt = toISO(data.updatedAt);
+              const completedAt = toISO(data.completedAt);
+              // Backfill month/year keys if missing for older data
+              let completionMonthYear = data.completionMonthYear;
+              let completionMonth = data.completionMonth;
+              let completionYear = data.completionYear;
+              if (!completionMonthYear && completedAt) {
+                const dte = new Date(completedAt);
+                const m = String(dte.getMonth() + 1).padStart(2, '0');
+                const y = dte.getFullYear();
+                completionMonthYear = `${y}-${m}`;
+                completionMonth = Number(m);
+                completionYear = y;
+              }
               return {
                 id: d.id,
                 ...data,
-                createdAt: toISO(data.createdAt),
-                updatedAt: toISO(data.updatedAt),
+                createdAt,
+                updatedAt,
+                completedAt,
+                completionMonthYear,
+                completionMonth,
+                completionYear,
                 history
               };
             });
@@ -983,6 +1015,216 @@ const useStore = create(
       // Get all items (Admin view)
       getAllItems: () => {
         return get().clothItems;
+      },
+
+      // Analytics functions for monthly completion data
+      getMonthlyCompletions: (year, month) => {
+        const state = get();
+        const monthYear = `${year}-${String(month).padStart(2, '0')}`;
+        return (state.clothItems || []).filter(item =>
+          item.status === WORKFLOW_STATES.READY &&
+          item.completionMonthYear === monthYear
+        );
+      },
+
+      getWorkerMonthlyStats: (year, month) => {
+        const state = get();
+        const monthYear = `${year}-${String(month).padStart(2, '0')}`;
+        const allItems = state.clothItems || [];
+
+        // Get all items assigned in this month (for assignment count)
+        const assignedItems = allItems.filter(item => {
+          if (!item.createdAt) return false;
+          const createdDate = typeof item.createdAt?.toDate === 'function' ? item.createdAt.toDate() : new Date(item.createdAt);
+          const itemMonthYear = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}`;
+          return itemMonthYear === monthYear;
+        });
+
+        // Get completed items for this month
+        const completedItems = allItems.filter(item =>
+          item.status === WORKFLOW_STATES.READY &&
+          item.completionMonthYear === monthYear
+        );
+
+        // Group by worker
+        const workerStats = {};
+        const workers = state.workers || {};
+
+        // Initialize stats for all workers
+        Object.values(workers).flat().forEach(workerName => {
+          workerStats[workerName] = {
+            name: workerName,
+            assigned: 0,
+            completed: 0,
+            completionRate: 0,
+            completedItems: [],
+            itemTypeBreakdown: {}
+          };
+        });
+
+        // Count assigned items
+        assignedItems.forEach(item => {
+          if (item.assignedTo && workerStats[item.assignedTo]) {
+            workerStats[item.assignedTo].assigned++;
+          }
+        });
+
+        // Count completed items and build detailed breakdown
+        completedItems.forEach(item => {
+          if (item.completedBy && workerStats[item.completedBy]) {
+            const worker = workerStats[item.completedBy];
+            worker.completed++;
+            worker.completedItems.push({
+              id: item.id,
+              billNumber: item.billNumber,
+              type: item.type,
+              quantity: item.quantity || 1,
+              completedAt: item.completedAt,
+              customerName: item.customerName
+            });
+
+            // Item type breakdown
+            const type = item.type || 'Unknown';
+            const quantity = item.quantity || 1;
+            worker.itemTypeBreakdown[type] = (worker.itemTypeBreakdown[type] || 0) + quantity;
+          }
+        });
+
+        // Calculate completion rates
+        Object.values(workerStats).forEach(worker => {
+          if (worker.assigned > 0) {
+            worker.completionRate = Math.round((worker.completed / worker.assigned) * 100);
+          }
+        });
+
+        return workerStats;
+      },
+
+      getMonthlyItemTypeBreakdown: (year, month) => {
+        const state = get();
+        const completions = state.getMonthlyCompletions(year, month);
+        const breakdown = {};
+
+        completions.forEach(item => {
+          const type = item.type || 'Unknown';
+          const quantity = item.quantity || 1;
+          breakdown[type] = (breakdown[type] || 0) + quantity;
+        });
+
+        return breakdown;
+      },
+
+
+      // Admin: Stage-level completions per worker for selected month (immediate credit)
+      getWorkerStageMonthlyStats: (year, month) => {
+        const state = get();
+        const monthYear = `${year}-${String(month).padStart(2, '0')}`;
+        const allItems = state.clothItems || [];
+
+        const stats = {};
+        const workers = state.workers || {};
+
+        // Initialize from known workers
+        Object.values(workers).flat().forEach((name) => {
+          stats[name] = { name, stageCompleted: 0, stages: {}, completedStages: [] };
+        });
+
+        allItems.forEach((item) => {
+          const history = Array.isArray(item.history) ? item.history : [];
+          history.forEach((entry) => {
+            if (entry?.actionCode !== 'completed_stage' || !entry?.actor || !entry?.timestamp) return;
+            const d = typeof entry.timestamp?.toDate === 'function' ? entry.timestamp.toDate() : new Date(entry.timestamp);
+            const entryMonthYear = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            if (entryMonthYear !== monthYear) return;
+
+            const workerName = entry.actor;
+            if (!stats[workerName]) stats[workerName] = { name: workerName, stageCompleted: 0, stages: {}, completedStages: [] };
+            stats[workerName].stageCompleted += 1;
+            const stageKey = entry?.actionParams?.stage || 'unknown';
+            stats[workerName].stages[stageKey] = (stats[workerName].stages[stageKey] || 0) + 1;
+            stats[workerName].completedStages.push({
+              id: item.id,
+              billNumber: item.billNumber,
+              type: item.type,
+              quantity: item.quantity || 1,
+              stage: stageKey,
+              timestamp: entry.timestamp,
+              customerName: item.customerName
+            });
+          });
+        });
+
+        return stats;
+      },
+
+      getWorkerPersonalStats: (workerName, year, month) => {
+        const state = get();
+        const monthYear = `${year}-${String(month).padStart(2, '0')}`;
+        const allItems = state.clothItems || [];
+
+        // Get items assigned to this worker in the month
+        const assignedItems = allItems.filter(item => {
+          if (item.assignedTo !== workerName) return false;
+          if (!item.createdAt) return false;
+          const createdDate = typeof item.createdAt?.toDate === 'function' ? item.createdAt.toDate() : new Date(item.createdAt);
+          const itemMonthYear = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}`;
+          return itemMonthYear === monthYear;
+        });
+
+        // Stage completions for this worker in the month (immediate credit)
+        const stageCompletions = [];
+        allItems.forEach(item => {
+          const history = Array.isArray(item.history) ? item.history : [];
+          history.forEach(entry => {
+            if (entry?.actionCode === 'completed_stage' && entry?.actor === workerName && entry?.timestamp) {
+              const d = typeof entry.timestamp?.toDate === 'function' ? entry.timestamp.toDate() : new Date(entry.timestamp);
+              const entryMonthYear = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              if (entryMonthYear === monthYear) {
+                stageCompletions.push({ item, entry, when: d });
+              }
+            }
+          });
+        });
+
+        const completedItems = stageCompletions.map(({ item, entry }) => ({
+          id: item.id,
+          billNumber: item.billNumber,
+          type: item.type,
+          quantity: item.quantity || 1,
+          completedAt: entry.timestamp,
+          customerName: item.customerName,
+          createdAt: item.createdAt
+        }));
+
+        const itemTypeBreakdown = {};
+        completedItems.forEach(ci => {
+          const type = ci.type || 'Unknown';
+          const quantity = ci.quantity || 1;
+          itemTypeBreakdown[type] = (itemTypeBreakdown[type] || 0) + quantity;
+        });
+
+        const completionTimes = [];
+        stageCompletions.forEach(({ item, entry }) => {
+          if (item.createdAt && entry.timestamp) {
+            const created = typeof item.createdAt?.toDate === 'function' ? item.createdAt.toDate() : new Date(item.createdAt);
+            const completed = typeof entry.timestamp?.toDate === 'function' ? entry.timestamp.toDate() : new Date(entry.timestamp);
+            const timeDiff = completed.getTime() - created.getTime();
+            if (!isNaN(timeDiff)) completionTimes.push(timeDiff);
+          }
+        });
+
+        const avgCompletionTime = completionTimes.length > 0
+          ? completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length
+          : 0;
+
+        return {
+          assigned: assignedItems.length,
+          completed: completedItems.length,
+          completionRate: assignedItems.length > 0 ? Math.round((completedItems.length / assignedItems.length) * 100) : 0,
+          completedItems,
+          itemTypeBreakdown,
+          avgCompletionTimeMs: avgCompletionTime
+        };
       }
     }),
     {

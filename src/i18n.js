@@ -46,7 +46,9 @@ const translations = {
       assigned_to: 'Assigned To',
       updated: 'Updated:',
       page: 'Page {n} / {m}',
-      showing: 'Showing {from}-{to} of {total}'
+      showing: 'Showing {from}-{to} of {total}',
+      total: 'Total',
+      close: 'Close'
     },
     auth: {
       heading: 'Sign in to your account',
@@ -135,8 +137,71 @@ const translations = {
       sort_bill: 'Bill Number',
       sort_status: 'Status',
       all_statuses: 'All Statuses',
-      clear_search: 'Clear search'
+      clear_search: 'Clear search',
+      my_tasks: 'My Tasks',
+      name_label: 'Worker Name'
     },
+    analytics: {
+      monthly_report: 'Monthly Report',
+      previous_month: 'Previous Month',
+      next_month: 'Next Month',
+      total_completed: 'Total Completed',
+      completion_rate: 'Completion Rate',
+      items_assigned: 'Items Assigned',
+      items_completed: 'Items Completed',
+      final_completions: 'Final Completions',
+      stage_completions: 'Stage Completions',
+      stage_breakdown: 'Stage Breakdown',
+
+      worker_performance: 'Worker Performance',
+      item_type_breakdown: 'Item Type Breakdown',
+      completed_items: 'Completed Items',
+      completion_details: 'Completion Details',
+      no_completions: 'No completions this month',
+      no_items: 'No items to display',
+      completed_by: 'Completed by',
+      avg_completion_time: 'Avg. Completion Time',
+      personal_stats: 'Personal Statistics',
+      monthly_performance: 'Monthly Performance',
+      completion_history: 'Completion History',
+      performance_trends: 'Performance Trends',
+      worker_breakdown: 'Worker Breakdown',
+      overall_stats: 'Overall Statistics',
+      performance_excellent: 'Excellent',
+      performance_good: 'Good',
+      performance_average: 'Average',
+      performance_needs_improvement: 'Needs Improvement',
+      performance_level: 'Performance Level',
+      recent_completions: 'Recent Completions',
+      total_pieces: 'Total Pieces',
+      avg_per_day: 'Avg. Per Day',
+      top_category: 'Top Category',
+      more_items: 'more items',
+      active_workers: 'Active Workers',
+      monthly_completion: {
+        title: 'Completed this month',
+        select_month: 'Select month'
+      },
+      details: {
+        title: 'Completion details',
+        select_month: 'Select month',
+        total: 'Total completed',
+        unknown_tailor: 'Unknown',
+        assigned_on: 'Assigned on',
+        completed_on: 'Completed on',
+        per_page: 'Per page',
+        showing_tailors: 'Showing {from}-{to} of {total} tailors',
+        show_more: 'Show {count} more items',
+        show_less: 'Show less',
+        page_info: 'Page {current} of {total}',
+        prev: 'Previous',
+        next: 'Next',
+        close: 'Close',
+        empty: 'No completed items for this month',
+        view: 'View details'
+      }
+    },
+
     workers: {
       manage_title: 'Manage Workers',
       add_placeholder: 'Add {role} name',
@@ -198,30 +263,7 @@ const translations = {
       m_ago: '{m}m ago',
       h_ago: '{h}h ago'
     },
-    analytics: {
-      monthly_completion: {
-        title: 'Completed this month',
-        select_month: 'Select month'
-      },
-      details: {
-        title: 'Completion details',
-        select_month: 'Select month',
-        total: 'Total completed',
-        unknown_tailor: 'Unknown',
-        assigned_on: 'Assigned on',
-        completed_on: 'Completed on',
-        per_page: 'Per page',
-        showing_tailors: 'Showing {from}-{to} of {total} tailors',
-        show_more: 'Show {count} more items',
-        show_less: 'Show less',
-        page_info: 'Page {current} of {total}',
-        prev: 'Previous',
-        next: 'Next',
-        close: 'Close',
-        empty: 'No completed items for this month',
-        view: 'View details'
-      }
-    },
+
     dialog: {
       confirm_title: 'Confirm Action',
       confirm_msg: 'Are you sure you want to proceed?',
@@ -365,7 +407,9 @@ const translations = {
       assigned_to: 'असाइन',
       updated: 'अपडेटेड:',
       page: 'पृष्ठ {n} / {m}',
-      showing: 'दिखा रहे हैं {from}-{to} कुल {total} में से'
+      showing: 'दिखा रहे हैं {from}-{to} कुल {total} में से',
+      total: 'कुल',
+      close: 'बंद करें'
     },
     auth: {
       heading: 'अपने खाते में साइन इन करें',
@@ -454,7 +498,73 @@ const translations = {
       sort_bill: 'बिल नंबर',
       sort_status: 'स्थिति',
       all_statuses: 'सभी स्थितियाँ',
-      clear_search: 'खोज साफ़ करें'
+      clear_search: 'खोज साफ़ करें',
+      my_tasks: 'मेरे कार्य',
+      name_label: 'कारीगर का नाम'
+    },
+    analytics: {
+      monthly_report: 'मासिक रिपोर्ट',
+      previous_month: 'पिछला महीना',
+      next_month: 'अगला महीना',
+      final_completions: 'अंतिम पूर्ण (Ready)',
+      stage_completions: 'चरण पूर्णताएँ',
+      stage_breakdown: 'चरणवार विवरण',
+
+      total_completed: 'कुल तैयार वस्त्र',
+      completion_rate: 'कार्य पूर्णता दर',
+      items_assigned: 'सौंपे गए कार्य',
+      items_completed: 'पूर्ण किए गए कार्य',
+      worker_performance: 'कारीगर प्रदर्शन',
+      item_type_breakdown: 'वस्त्र प्रकार विवरण',
+      completed_items: 'तैयार वस्त्र',
+      completion_details: 'कार्य पूर्णता विवरण',
+      no_completions: 'इस महीने कोई कार्य पूर्ण नहीं',
+      no_items: 'दिखाने के लिए कोई वस्त्र नहीं',
+      completed_by: 'द्वारा तैयार',
+      avg_completion_time: 'औसत तैयारी समय',
+      personal_stats: 'व्यक्तिगत आंकड़े',
+      monthly_performance: 'मासिक कार्य प्रदर्शन',
+      completion_history: 'कार्य पूर्णता इतिहास',
+      performance_trends: 'प्रदर्शन रुझान',
+      worker_breakdown: 'कारीगर विवरण',
+      overall_stats: 'समग्र आंकड़े',
+      performance_excellent: 'उत्कृष्ट',
+      performance_good: 'अच्छा',
+      performance_average: 'औसत',
+      performance_needs_improvement: 'सुधार की आवश्यकता',
+      performance_level: 'प्रदर्शन स्तर',
+      recent_completions: 'हाल में तैयार वस्त्र',
+      total_pieces: 'कुल टुकड़े',
+      avg_per_day: 'औसत प्रति दिन',
+      top_category: 'मुख्य श्रेणी',
+      more_items: 'और वस्त्र',
+      active_workers: 'सक्रिय कारीगर',
+      monthly_completion: {
+        title: 'इस माह पूर्ण',
+        select_month: 'महीना चुनें'
+      },
+      details: {
+        title: 'विस्तृत पूर्णता',
+        select_month: 'महीना चुनें',
+        total: 'कुल पूर्ण',
+        unknown_tailor: 'अज्ञात',
+        assigned_on: 'असाइन दिनांक',
+        completed_on: 'पूर्ण दिनांक',
+        per_page: 'प्रति पृष्ठ',
+        showing_tailors: '{total} में से {from}-{to} दर्जी दिखा रहे हैं',
+        show_more: '{count} और आइटम दिखाएं',
+        show_less: 'कम दिखाएं',
+        page_info: 'पृष्ठ {current} / {total}',
+        prev: 'पिछला',
+        next: 'अगला',
+        close: 'बंद करें',
+        empty: 'इस महीने कोई पूर्ण आइटम नहीं',
+        view: 'विवरण देखें'
+      }
+    },
+    common: {
+      total: 'कुल',
+      close: 'बंद करें'
     },
     workers: {
       manage_title: 'कर्मचारियों का प्रबंधन',
@@ -523,30 +633,7 @@ const translations = {
       delete_title: 'आइटम हटाएँ',
       delete_msg: 'क्या आप वाकई आइटम "{bill}" हटाना चाहते हैं? यह क्रिया वापस नहीं होगी।'
     },
-    analytics: {
-      monthly_completion: {
-        title: 'इस माह पूर्ण',
-        select_month: 'महीना चुनें'
-      },
-      details: {
-        title: 'विस्तृत पूर्णता',
-        select_month: 'महीना चुनें',
-        total: 'कुल पूर्ण',
-        unknown_tailor: 'अज्ञात',
-        assigned_on: 'असाइन दिनांक',
-        completed_on: 'पूर्ण दिनांक',
-        per_page: 'प्रति पृष्ठ',
-        showing_tailors: '{total} में से {from}-{to} दर्जी दिखा रहे हैं',
-        show_more: '{count} और आइटम दिखाएं',
-        show_less: 'कम दिखाएं',
-        page_info: 'पृष्ठ {current} / {total}',
-        prev: 'पिछला',
-        next: 'अगला',
-        close: 'बंद करें',
-        empty: 'इस महीने कोई पूर्ण आइटम नहीं',
-        view: 'विवरण देखें'
-      }
-    },
+
     roles: {
       Admin: 'एडमिन',
       'Threading Worker': 'धागा मिलान कर्मी',

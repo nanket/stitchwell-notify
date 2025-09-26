@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   LogOut,
   Bell,
@@ -14,11 +14,12 @@ import {
   SortDesc,
   LayoutGrid,
   List,
-  ChevronDown
+  BarChart3
 } from 'lucide-react';
 import useStore, { WORKFLOW_STATES } from '../store/useStore';
 import TaskCard from './TaskCard';
 import NotificationPanel from './NotificationPanel';
+import WorkerMonthlyAnalytics from './WorkerMonthlyAnalytics';
 import { useI18n } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher';
 
@@ -35,6 +36,7 @@ const WorkerDashboard = () => {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentView, setCurrentView] = useState('tasks'); // 'tasks' or 'analytics'
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,9 +46,9 @@ const WorkerDashboard = () => {
   const [isCompactView, setIsCompactView] = useState(() => {
     try {
       const saved = localStorage.getItem('stitchwell_worker_compact_view');
-      return saved ? JSON.parse(saved) : false;
+      return saved ? JSON.parse(saved) : true; // Default to compact view
     } catch {
-      return false;
+      return true; // Default to compact view
     }
   });
 
@@ -318,7 +320,42 @@ const WorkerDashboard = () => {
 
         </div>
 
-        {/* Search and Filter Controls */}
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              <button
+                onClick={() => setCurrentView('tasks')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  currentView === 'tasks'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Package className="h-4 w-4" />
+                  <span>{t('worker.my_tasks')}</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setCurrentView('analytics')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  currentView === 'analytics'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span>{t('analytics.monthly_performance')}</span>
+                </div>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Search and Filter Controls - Only show for tasks view */}
+        {currentView === 'tasks' && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="p-4 space-y-4">
             {/* Search Bar */}
@@ -408,43 +445,50 @@ const WorkerDashboard = () => {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Tasks List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t('worker.section_title')}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {t('worker.section_subtitle')}
-            </p>
-          </div>
+        {/* Content based on current view */}
+        {currentView === 'tasks' ? (
+          /* Tasks List */
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t('worker.section_title')}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('worker.section_subtitle')}
+              </p>
+            </div>
 
-          <div className="p-6">
-            {myTasks.length === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {t('worker.no_tasks_title')}
-                </h3>
-                <p className="text-gray-600">
-                  {t('worker.no_tasks_body')}
-                </p>
-              </div>
-            ) : (
-              <div className={isCompactView ? "space-y-2" : "space-y-4"}>
-                {myTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onComplete={handleCompleteTask}
-                    compact={isCompactView}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="p-6">
+              {myTasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {t('worker.no_tasks_title')}
+                  </h3>
+                  <p className="text-gray-600">
+                    {t('worker.no_tasks_body')}
+                  </p>
+                </div>
+              ) : (
+                <div className={isCompactView ? "space-y-2" : "space-y-4"}>
+                  {myTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onComplete={handleCompleteTask}
+                      compact={isCompactView}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Analytics View */
+          <WorkerMonthlyAnalytics />
+        )}
       </div>
     </div>
   );
