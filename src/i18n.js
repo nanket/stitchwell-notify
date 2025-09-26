@@ -83,7 +83,8 @@ const translations = {
       status: 'Status',
       type: 'Type',
       assignee: 'Assignee',
-      page_size: 'Page size'
+      page_size: 'Page size',
+      group_by_bill: 'Group by bill'
     },
     table: {
       bill: 'Bill #',
@@ -139,13 +140,25 @@ const translations = {
       subtitle: 'Add a new cloth item to the workflow',
       cloth_type: 'Cloth Type *',
       bill_number: 'Bill Number *',
-      bill_placeholder: 'Enter unique bill number',
+      bill_placeholder: 'Enter bill number',
       cancel: 'Cancel',
       create: 'Create Item',
       creating: 'Creating...',
       error_select_type: 'Please select a cloth type',
       error_bill_required: 'Bill number is required',
       error_bill_exists: 'Bill number already exists'
+      ,
+      quantity: 'Quantity *',
+      quantity_placeholder: 'Enter quantity',
+      error_quantity_min: 'Quantity must be at least 1',
+
+      photos: 'Photos (optional)',
+      add_photo: 'Add photo',
+      selected: 'selected',
+      photo_hint: 'Use camera or gallery',
+      uploading: 'Uploading',
+      upload_error: 'Upload failed. Please try again.'
+
     },
     card: {
       bill: 'Bill #',
@@ -155,10 +168,12 @@ const translations = {
       history: 'History',
       completing: 'Completing...',
       mark_complete: 'Mark Complete',
-
       task_history: 'Task History',
       status: 'Status: {status}',
       assigned: 'Assigned: {name}'
+    },
+    photos: {
+      delete: 'Delete photo'
     },
     notif_panel: {
       title: 'Notifications',
@@ -373,7 +388,8 @@ const translations = {
       status: 'स्थिति',
       type: 'प्रकार',
       assignee: 'असाइनी',
-      page_size: 'पेज आकार'
+      page_size: 'पेज आकार',
+      group_by_bill: 'बिल के अनुसार समूह'
     },
     table: {
       bill: 'बिल #',
@@ -429,13 +445,23 @@ const translations = {
       subtitle: 'कार्यप्रवाह में नया कपड़ा आइटम जोड़ें',
       cloth_type: 'कपड़े का प्रकार *',
       bill_number: 'बिल नंबर *',
-      bill_placeholder: 'अद्वितीय बिल नंबर दर्ज करें',
+      bill_placeholder: 'बिल नंबर दर्ज करें',
       cancel: 'रद्द करें',
       create: 'आइटम बनाएँ',
       creating: 'बना रहा है...',
       error_select_type: 'कपड़े का प्रकार चुनें',
       error_bill_required: 'बिल नंबर आवश्यक है',
-      error_bill_exists: 'यह बिल नंबर पहले से मौजूद है'
+      error_bill_exists: 'यह बिल नंबर पहले से मौजूद है',
+      quantity: 'मात्रा *',
+      quantity_placeholder: 'मात्रा दर्ज करें',
+      error_quantity_min: 'मात्रा कम से कम 1 होनी चाहिए',
+
+      photos: 'फ़ोटो (वैकल्पिक)',
+      add_photo: 'फ़ोटो जोड़ें',
+      selected: 'चुना गया',
+      photo_hint: 'कैमरा या गैलरी से चुनें',
+      uploading: 'अपलोड हो रहा है',
+      upload_error: 'अपलोड विफल। कृपया फिर से प्रयास करें।'
     },
     card: {
       bill: 'बिल #',
@@ -448,6 +474,9 @@ const translations = {
       task_history: 'कार्य इतिहास',
       status: 'स्थिति: {status}',
       assigned: 'असाइन: {name}'
+    },
+    photos: {
+      delete: 'फोटो हटाएँ'
     },
     notif_panel: {
       title: 'सूचनाएँ',

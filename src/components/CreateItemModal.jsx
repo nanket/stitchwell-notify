@@ -2,20 +2,22 @@ import React, { useState } from 'react';
 import { X, Package, Hash, Camera } from 'lucide-react';
 import useStore, { CLOTH_TYPES } from '../store/useStore';
 import { useI18n } from '../i18n';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const CreateItemModal = ({ onClose }) => {
   const { t, trType } = useI18n();
   const [formData, setFormData] = useState({
     type: '',
-    billNumber: ''
+    billNumber: '',
+    quantity: 1
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0, percent: 0 });
+  const [uploadError, setUploadError] = useState('');
 
-  const { createClothItem, getAllItems } = useStore();
-  const existingItems = getAllItems();
+  const { createClothItem } = useStore();
 
   const validateForm = () => {
     const newErrors = {};
@@ -26,13 +28,45 @@ const CreateItemModal = ({ onClose }) => {
 
     if (!formData.billNumber.trim()) {
       newErrors.billNumber = t('create_item.error_bill_required');
-    } else if (existingItems.some(item => item.billNumber === formData.billNumber.trim())) {
-      newErrors.billNumber = t('create_item.error_bill_exists');
     }
+
+    if (!(Number(formData.quantity) >= 1)) {
+      newErrors.quantity = t('create_item.error_quantity_min');
+    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  // Create a thumbnail Blob using canvas (max 256px on the longest side)
+  async function makeThumbnail(file) {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const maxSide = 256;
+            let { width, height } = img;
+            const scale = Math.min(1, maxSide / Math.max(width, height));
+            width = Math.max(1, Math.round(width * scale));
+            height = Math.max(1, Math.round(height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob); else reject(new Error('THUMBNAIL_BLOB_NULL'));
+            }, 'image/jpeg', 0.7);
+          } catch (e) { reject(e); }
+        };
+        img.onerror = () => reject(new Error('IMAGE_LOAD_FAIL'));
+        img.src = URL.createObjectURL(file);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,24 +76,61 @@ const CreateItemModal = ({ onClose }) => {
     }
 
     setIsSubmitting(true);
+    setUploadError('');
 
     try {
-      // Upload images first (if any)
+      // Upload images first (if any), along with thumbnails
       const storage = getStorage();
-      const urls = [];
+      const images = [];
+      const bill = formData.billNumber.trim();
+      const total = files.length || 0;
+      let done = 0;
+      setUploadProgress({ done, total, percent: total ? 0 : 100 });
+
       for (const f of files) {
-        const safeName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${(f.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const path = `cloth-items/${formData.billNumber.trim()}/${safeName}`;
-        const ref = storageRef(storage, path);
-        await uploadBytes(ref, f);
-        const url = await getDownloadURL(ref);
-        urls.push(url);
+        // Build safe filename and paths
+        const base = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+        const ext = (f.name?.split?.('.')?.pop?.() || 'jpg').toLowerCase();
+        const safeName = `${base}_${(f.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const fullPath = `cloth-items/${bill}/${safeName}`;
+        const thumbPath = `cloth-items/${bill}/_thumbs/${base}.jpg`;
+
+        // Upload full image with progress
+        const fullRef = storageRef(storage, fullPath);
+        await new Promise((res, rej) => {
+          const task = uploadBytesResumable(fullRef, f);
+          task.on('state_changed', (snap) => {
+            const filePct = Math.round((snap.bytesTransferred / Math.max(1, snap.totalBytes)) * 100);
+            setUploadProgress((p) => ({ done, total, percent: Math.round(((done + filePct / 100) / Math.max(1, total)) * 100) }));
+          }, rej, res);
+        });
+        const fullUrl = await getDownloadURL(fullRef);
+
+        // Create and upload thumbnail
+        let thumbUrl = '';
+        try {
+          const thumbBlob = await makeThumbnail(f);
+          const tRef = storageRef(storage, thumbPath);
+          await new Promise((res, rej) => {
+            const task = uploadBytesResumable(tRef, thumbBlob);
+            task.on('state_changed', () => {}, rej, res);
+          });
+          thumbUrl = await getDownloadURL(tRef);
+        } catch (e) {
+          // If thumbnail generation fails, fallback to full
+          thumbUrl = fullUrl;
+        }
+
+        images.push({ fullUrl, thumbUrl, path: fullPath, thumbPath });
+        done += 1;
+        setUploadProgress({ done, total, percent: Math.round((done / Math.max(1, total)) * 100) });
       }
 
-      await createClothItem(formData.type, formData.billNumber.trim(), urls);
+      await createClothItem(formData.type, bill, images, Number(formData.quantity) || 1);
       onClose();
     } catch (error) {
       console.error('Error creating item:', error);
+      setUploadError(t('create_item.upload_error') || 'Upload failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +141,7 @@ const CreateItemModal = ({ onClose }) => {
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -171,12 +242,49 @@ const CreateItemModal = ({ onClose }) => {
             )}
           </div>
 
+
+          {/* Quantity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('create_item.quantity')}
+            </label>
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => handleInputChange('quantity', Math.max(1, formData.quantity - 1))}
+                className="flex-shrink-0 w-10 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={formData.quantity <= 1}
+              >
+                <span className="text-lg font-medium">−</span>
+              </button>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={formData.quantity}
+                onChange={(e) => handleInputChange('quantity', Math.max(1, Number(e.target.value) || 1))}
+                className={`flex-1 text-center input ${errors.quantity ? 'border-red-300 focus:ring-red-500' : ''}`}
+                placeholder={t('create_item.quantity_placeholder') || 'Enter quantity'}
+              />
+              <button
+                type="button"
+                onClick={() => handleInputChange('quantity', formData.quantity + 1)}
+                className="flex-shrink-0 w-10 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <span className="text-lg font-medium">+</span>
+              </button>
+            </div>
+            {errors.quantity && (
+              <p className="mt-2 text-sm text-red-600">{errors.quantity}</p>
+            )}
+          </div>
+
           {/* Photos */}
-          {/* <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('create_item.photos') || 'Photos (optional)'}
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <label className="btn-secondary cursor-pointer inline-flex items-center">
                 <Camera className="h-4 w-4 mr-2" /> {t('create_item.add_photo') || 'Add photo'}
                 <input
@@ -188,9 +296,17 @@ const CreateItemModal = ({ onClose }) => {
                   onChange={(e) => setFiles(Array.from(e.target.files || []))}
                 />
               </label>
-              <div className="text-xs text-gray-500">{files.length > 0 ? `${files.length} selected` : t('create_item.photo_hint') || 'Use camera or gallery'}</div>
+              <div className="text-xs text-gray-500">{files.length > 0 ? `${files.length} ${t('create_item.selected') || 'selected'}` : t('create_item.photo_hint') || 'Use camera or gallery'}</div>
+              {isSubmitting && (
+                <div className="text-xs text-blue-700">
+                  {(t('create_item.uploading') || 'Uploading') + ` ${uploadProgress.done}/${uploadProgress.total}`}{uploadProgress.total ? ` (${uploadProgress.percent}%)` : ''}
+                </div>
+              )}
+              {uploadError && (
+                <div className="text-xs text-red-600">{uploadError}</div>
+              )}
             </div>
-          </div> */}
+          </div>
 
           {/* Form Actions */}
           <div className="flex space-x-3 pt-4">
@@ -205,7 +321,7 @@ const CreateItemModal = ({ onClose }) => {
             <button
               type="submit"
               className="flex-1 btn-primary py-2"
-              disabled={isSubmitting || !formData.type || !formData.billNumber.trim()}
+              disabled={isSubmitting || !formData.type || !formData.billNumber.trim() || !(Number(formData.quantity) >= 1)}
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">

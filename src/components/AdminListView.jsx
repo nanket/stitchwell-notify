@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Filter, ArrowUpDown, User, Package, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, User, Package, Trash2, ChevronDown, ChevronUp, X } from 'lucide-react';
 import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
 import ConfirmDialog from './ConfirmDialog';
 import { useI18n } from '../i18n';
+import ImageLightbox from './ImageLightbox';
 
 const STATUSES = Object.values(WORKFLOW_STATES);
 const TYPES = ['Shirt', 'Pant', 'Kurta', 'Safari'];
@@ -22,7 +23,7 @@ const SortHeader = ({ label, sortKey, activeKey, direction, onSort }) => (
 
 const AdminListView = ({ items, onAssignToTailor }) => {
   const { t, trStatus, trType } = useI18n();
-  const { completeTask, workers, deleteClothItem, currentUserRole, assignItemToWorker } = useStore();
+  const { workers, deleteClothItem, currentUserRole, assignItemToWorker, deleteItemImage } = useStore();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [type, setType] = useState('');
@@ -33,9 +34,12 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   const [sortDir, setSortDir] = useState('desc');
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, item: null });
 
-
+  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const [expanded, setExpanded] = useState({});
   const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  const [groupByBill, setGroupByBill] = useState(false);
+  const [expandedBills, setExpandedBills] = useState({});
+
 
   const assignees = useMemo(() => {
     const set = new Set(items.map(i => i.assignedTo).filter(Boolean));
@@ -92,6 +96,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
       return 0;
     });
 
+
     return list;
   }, [items, search, status, type, assignee, sortKey, sortDir]);
 
@@ -127,6 +132,36 @@ const AdminListView = ({ items, onAssignToTailor }) => {
     return h?.action || '';
   };
 
+  const billGroups = useMemo(() => {
+    const map = new Map();
+    filtered.forEach(i => {
+      const key = String(i.billNumber || '');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(i);
+    });
+    const toMs = (v) => {
+      if (!v) return 0;
+      try {
+        const d = typeof v?.toDate === 'function' ? v.toDate() : new Date(v);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      } catch { return 0; }
+    };
+    const arr = Array.from(map.entries()).map(([bill, items]) => {
+      const countsByType = items.reduce((acc, it) => {
+        const k = it.type || '';
+        const q = Number(it?.quantity) || 1;
+        acc[k] = (acc[k] || 0) + q;
+        return acc;
+      }, {});
+      const readyCount = items.filter(it => it.status === WORKFLOW_STATES.READY).length;
+      const latestUpdatedAt = items.reduce((max, it) => Math.max(max, toMs(it.updatedAt)), 0);
+      const totalQty = items.reduce((sum, it) => sum + (Number(it?.quantity) || 1), 0);
+      return { bill, items, countsByType, readyCount, total: totalQty, latestUpdatedAt };
+    });
+    return arr.sort((a, b) => (a.latestUpdatedAt - b.latestUpdatedAt) * (sortDir === 'asc' ? 1 : -1));
+  }, [filtered, sortDir]);
+
+
   const handleDeleteClick = (item) => {
     setDeleteDialog({ isOpen: true, item });
   };
@@ -154,6 +189,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
               placeholder={t('filters.search_placeholder')}
               className="input pl-9 w-full"
             />
+     
           </div>
         </div>
         <div className="min-w-[150px]">
@@ -190,93 +226,143 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         <table className="min-w-full text-xs sm:text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr className="border-b">
-              <th className="px-3 py-2 text-left w-36"><SortHeader label={t('table.bill')} sortKey="billNumber" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 text-left w-28"><SortHeader label={t('table.type')} sortKey="type" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 text-left"><SortHeader label={t('table.status')} sortKey="status" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 text-left w-48"><SortHeader label={t('table.assigned_to')} sortKey="assignedTo" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 text-left w-56"><SortHeader label={t('table.updated')} sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
-              <th className="px-3 py-2 text-left w-64">{t('table.actions')}</th>
-              {isAdmin && <th className="px-3 py-2 text-left w-20">{t('table.delete')}</th>}
+              <th className="px-2 sm:px-3 py-2 text-left w-24 sm:w-36"><SortHeader label={t('table.bill')} sortKey="billNumber" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-2 sm:px-3 py-2 text-left w-20 sm:w-28"><SortHeader label={t('table.type')} sortKey="type" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-2 sm:px-3 py-2 text-left hidden sm:table-cell"><SortHeader label={t('table.status')} sortKey="status" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-2 sm:px-3 py-2 text-left w-24 sm:w-48"><SortHeader label={t('table.assigned_to')} sortKey="assignedTo" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-2 sm:px-3 py-2 text-left w-32 sm:w-56 hidden sm:table-cell"><SortHeader label={t('table.updated')} sortKey="updatedAt" activeKey={sortKey} direction={sortDir} onSort={handleSort} /></th>
+              <th className="px-2 sm:px-3 py-2 text-left w-32 sm:w-64">{t('table.actions')}</th>
+              {isAdmin && <th className="px-2 sm:px-3 py-2 text-left w-12 sm:w-20">{t('table.delete')}</th>}
             </tr>
           </thead>
           <tbody>
             {pageItems.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-gray-500">{t('table.empty')}</td>
+                <td colSpan={isAdmin ? 7 : 6} className="text-center py-10 text-gray-500 text-sm">{t('table.empty')}</td>
               </tr>
             ) : pageItems.map(item => (
               <React.Fragment key={item.id}>
                 <tr className="border-b hover:bg-gray-50">
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium text-gray-900">{item.billNumber}</span>
+                  <td className="px-2 sm:px-3 py-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Package className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                      <span className="font-medium text-gray-900 text-xs sm:text-sm truncate">{item.billNumber}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2">{trType(item.type)}</td>
-                  <td className="px-3 py-2">{trStatus(item.status)}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span>{item.assignedTo || '—'}</span>
+                  <td className="px-2 sm:px-3 py-2 text-xs sm:text-sm">
+                    <div className="truncate">
+                      {((Number(item?.quantity) || 1) > 1) ? `${Number(item.quantity)}x ${trType(item.type)}` : trType(item.type)}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-gray-600">{formatDate(item.updatedAt)}</td>
-                  <td className="px-3 py-2">
-                    {isAdmin && (
-                      <button
-                        onClick={() => toggleExpand(item.id)}
-                        className="btn-secondary min-h-0 h-9 px-2 py-1 text-xs sm:h-10 sm:px-3 mb-2"
-                        aria-expanded={!!expanded[item.id]}
-                        aria-controls={`history-${item.id}`}
-                        title={t('table.history') || 'History'}
-                      >
-                        {expanded[item.id] ? (
-                          <span className="inline-flex items-center gap-1"><ChevronUp className="h-4 w-4" /><span className="hidden sm:inline">{t('table.history') || 'History'}</span></span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1"><ChevronDown className="h-4 w-4" /><span className="hidden sm:inline">{t('table.history') || 'History'}</span></span>
-                        )}
-                      </button>
-                    )}
+                  <td className="px-2 sm:px-3 py-2 text-xs sm:text-sm hidden sm:table-cell">{trStatus(item.status)}</td>
+                  <td className="px-2 sm:px-3 py-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm truncate">{item.assignedTo || '—'}</span>
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-3 py-2 text-gray-600 text-xs sm:text-sm hidden sm:table-cell">{formatDate(item.updatedAt)}</td>
+                  <td className="px-2 sm:px-3 py-2 align-top">
+                    <div className="flex flex-col gap-1 sm:gap-2 min-w-0">
+                      {isAdmin && (
+                        <button
+                          onClick={() => toggleExpand(item.id)}
+                          className="btn-secondary min-h-0 h-8 px-2 py-1 text-xs w-full sm:w-auto"
+                          aria-expanded={!!expanded[item.id]}
+                          aria-controls={`history-${item.id}`}
+                          title={t('table.history') || 'History'}
+                        >
+                          {expanded[item.id] ? (
+                            <span className="inline-flex items-center gap-1 justify-center">
+                              <ChevronUp className="h-3 w-3" />
+                              <span className="hidden sm:inline text-xs">{t('table.history') || 'History'}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 justify-center">
+                              <ChevronDown className="h-3 w-3" />
+                              <span className="hidden sm:inline text-xs">{t('table.history') || 'History'}</span>
+                            </span>
+                          )}
+                        </button>
+                      )}
 
-                    {item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT ? (
-                      <div className="flex flex-col gap-2">
+                      {item.status === WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT ? (
                         <select
                           defaultValue=""
                           onChange={(e) => e.target.value && onAssignToTailor(item.id, e.target.value)}
-                          className="select w-full"
+                          className="select w-full min-w-[120px] max-w-[14rem] text-xs h-8"
                         >
                           <option value="">{t('table.assign_tailor')}</option>
                           {(workers[USER_ROLES.TAILOR] || []).map(t => (
                             <option key={t} value={t}>{t}</option>
                           ))}
                         </select>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 text-xs">{t('table.no_action')}</span>
-                    )}
-                    {/* Override assignment (Admin can reassign anytime) */}
-                    <div className="mt-2 flex flex-col gap-2">
-                      <select
-                        defaultValue=""
-                        onChange={(e) => e.target.value && assignItemToWorker(item.id, e.target.value)}
-                        className="select w-full"
-                      >
-                        <option value="">{t('table.override_assign')}</option>
-                        {allWorkers.map(w => (
-                          <option key={w} value={w}>{w}</option>
-                        ))}
-                      </select>
+                      ) : (
+                        <span className="text-gray-400 text-xs text-center sm:text-left">{t('table.no_action')}</span>
+                      )}
+
+                      {/* Photo thumbnails - responsive grid */}
+                      {(() => {
+                        const imgs = Array.isArray(item.images) && item.images.length > 0 ? item.images : (Array.isArray(item.photoUrls) ? item.photoUrls.map(u => ({ fullUrl: u, thumbUrl: u })) : []);
+                        if (!imgs.length) return null;
+                        return (
+                          <div className="mt-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2">
+                              {imgs.slice(0, 3).map((im, idx) => (
+                                <div key={idx} className="relative group">
+                                  <button 
+                                    onClick={() => setLightbox({ open: true, images: imgs, index: idx })} 
+                                    className="block aspect-square overflow-hidden rounded border w-full h-12 sm:h-16"
+                                  >
+                                    <img 
+                                      src={im.thumbUrl || im.fullUrl} 
+                                      alt={`thumb ${idx+1}`} 
+                                      className="w-full h-full object-cover" 
+                                      loading="lazy" 
+                                    />
+                                  </button>
+                                  {isAdmin && (
+                                    <button
+                                      title={t('photos.delete') || 'Delete photo'}
+                                      className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded p-0.5 opacity-0 group-hover:opacity-100"
+                                      onClick={async (e) => { e.stopPropagation(); await deleteItemImage(item.id, im); }}
+                                    >
+                                      <X className="h-2 w-2 sm:h-3 sm:w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            {imgs.length > 3 && (
+                              <div className="text-[10px] sm:text-[11px] text-gray-500 mt-1 text-center">+{imgs.length - 3} more</div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Override assignment (Admin can reassign anytime) */}
+                      {isAdmin && (
+                        <select
+                          defaultValue=""
+                          onChange={(e) => e.target.value && assignItemToWorker(item.id, e.target.value)}
+                          className="select w-full min-w-[120px] max-w-[14rem] text-xs h-8"
+                        >
+                          <option value="">{t('table.override_assign')}</option>
+                          {allWorkers.map(w => (
+                            <option key={w} value={w}>{w}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </td>
                   {isAdmin && (
-                    <td className="px-3 py-2">
+                    <td className="px-2 sm:px-3 py-2">
                       <button
                         onClick={() => handleDeleteClick(item)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title={t('dialog.delete_title')}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                     </td>
                   )}
@@ -284,7 +370,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
 
                 {isAdmin && expanded[item.id] && (
                   <tr className="bg-gray-50" id={`history-${item.id}`}>
-                    <td colSpan={isAdmin ? 7 : 6} className="px-3 py-3">
+                    <td colSpan={isAdmin ? 7 : 6} className="px-2 sm:px-3 py-3">
                       <div className="rounded-lg border bg-white p-3 sm:p-4">
                         <div className="mb-2 text-sm font-medium text-gray-700">{t('table.history') || 'History'}</div>
                         <ol className="relative pl-4 sm:pl-5 before:absolute before:left-1 before:top-1 before:bottom-1 before:w-px before:bg-gray-200">
@@ -356,6 +442,11 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         cancelText={t('common.cancel')}
         type="danger"
       />
+
+      {/* Lightbox */}
+      {lightbox.open && (
+        <ImageLightbox images={lightbox.images} index={lightbox.index} onClose={() => setLightbox({ open: false, images: [], index: 0 })} />
+      )}
     </div>
   );
 };

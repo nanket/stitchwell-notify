@@ -125,7 +125,7 @@ const KanbanBoard = ({ items, onAssignToTailor, isAdmin }) => {
                         </span>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(item.type)}`}>
-                        {trType(item.type)}
+                        {((Number(item?.quantity) || 1) > 1) ? `${Number(item.quantity)}x ${trType(item.type)}` : trType(item.type)}
                       </span>
                     </div>
 

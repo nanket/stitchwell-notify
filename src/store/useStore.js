@@ -482,17 +482,24 @@ const useStore = create(
       },
 
       // Create new cloth item (Admin only)
-      createClothItem: async (type, billNumber, photoUrls = []) => {
+      // images: array of { fullUrl, thumbUrl, path?, thumbPath? }
+      // For backward compatibility we also populate photoUrls
+      createClothItem: async (type, billNumber, images = [], quantity = 1) => {
         try {
           const db = await ensureDb();
           const workers = get().workers;
           const cuttingAssignee = workers[USER_ROLES.CUTTING_WORKER]?.[0] || null;
+          const imgs = Array.isArray(images) ? images.filter(Boolean) : [];
+          const photoUrls = imgs.length > 0 ? imgs.map(i => i.fullUrl).filter(Boolean) : [];
           const payload = {
             type,
             billNumber,
             status: WORKFLOW_STATES.AWAITING_CUTTING,
+            quantity: Number(quantity) || 1,
+
             assignedTo: cuttingAssignee,
-            photoUrls: Array.isArray(photoUrls) ? photoUrls : [],
+            images: imgs,
+            photoUrls,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             history: [
@@ -899,6 +906,52 @@ const useStore = create(
           });
         } catch (e) {
           console.error('Error subscribing to notifications:', e);
+        }
+      },
+
+      // Delete a single image from an item (Admin only)
+      deleteItemImage: async (itemId, image) => {
+        try {
+          const state = get();
+          if (state.currentUserRole !== USER_ROLES.ADMIN) {
+            toast.error(tGlobal('store.only_admin_delete'));
+            return false;
+          }
+          if (!itemId || !image) return false;
+          const db = await ensureDb();
+          const itemRef = doc(db, 'clothItems', itemId);
+          const snap = await getDoc(itemRef);
+          if (!snap.exists()) {
+            toast.error(tGlobal('store.item_not_found'));
+            return false;
+          }
+          const data = snap.data() || {};
+          const images = Array.isArray(data.images) ? data.images : [];
+          const photoUrls = Array.isArray(data.photoUrls) ? data.photoUrls : [];
+
+          // Remove from storage if we can
+          try {
+            const { getStorage, ref, deleteObject } = await import('firebase/storage');
+            const storage = getStorage();
+            const paths = [];
+            if (image?.path) paths.push(image.path);
+            if (image?.thumbPath) paths.push(image.thumbPath);
+            // If image came from legacy URL only, try to delete via URL
+            if (!paths.length && image?.fullUrl) paths.push(image.fullUrl);
+            for (const p of paths) {
+              try { await deleteObject(ref(storage, p)); } catch (_) {}
+            }
+          } catch (_) {}
+
+          // Update Firestore arrays
+          const nextImages = images.filter((im) => (im?.fullUrl || '') !== (image?.fullUrl || ''));
+          const nextUrls = photoUrls.filter((u) => u !== (image?.fullUrl || image));
+          await updateDoc(itemRef, { images: nextImages, photoUrls: nextUrls, updatedAt: serverTimestamp() });
+          return true;
+        } catch (e) {
+          console.error('deleteItemImage error', e);
+          toast.error(tGlobal('store.failed_delete'));
+          return false;
         }
       },
 

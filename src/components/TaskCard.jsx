@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useI18n } from '../i18n';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  User, 
-  ChevronDown, 
+import ImageLightbox from './ImageLightbox';
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  User,
+  ChevronDown,
   ChevronUp,
   History
 } from 'lucide-react';
@@ -14,6 +15,7 @@ const TaskCard = ({ task, onComplete }) => {
   const { t, trStatus, trType } = useI18n();
   const [showHistory, setShowHistory] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [showLightbox, setShowLightbox] = useState({ open: false, index: 0 });
 
   const getTypeColor = (type) => {
     switch (type) {
@@ -79,12 +81,12 @@ const TaskCard = ({ task, onComplete }) => {
                 {t('card.bill')}: {task.billNumber}
               </h3>
               <p className="text-sm text-gray-600">
-                {trType(task.type)}
+                {((Number(task?.quantity) || 1) > 1) ? `${Number(task.quantity)}x ${trType(task.type)}` : trType(task.type)}
               </p>
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(task.type)}`}>
-            {trType(task.type)}
+            {((Number(task?.quantity) || 1) > 1) ? `${Number(task.quantity)}x ${trType(task.type)}` : trType(task.type)}
           </span>
         </div>
 
@@ -113,15 +115,24 @@ const TaskCard = ({ task, onComplete }) => {
         </div>
 
         {/* Photos */}
-        {Array.isArray(task.photoUrls) && task.photoUrls.length > 0 && (
-          <div className="mb-4 grid grid-cols-3 gap-2">
-            {task.photoUrls.map((url, idx) => (
-              <a key={idx} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded border">
-                <img src={url} alt="item" className="w-full h-full object-cover" loading="lazy" />
-              </a>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const imgs = Array.isArray(task.images) && task.images.length > 0 ? task.images : (Array.isArray(task.photoUrls) ? task.photoUrls.map(u => ({ fullUrl: u, thumbUrl: u })) : []);
+          if (!imgs.length) return null;
+          return (
+            <div className="mb-4">
+              <div className="grid grid-cols-3 gap-2">
+                {imgs.map((im, idx) => (
+                  <button key={idx} onClick={() => setShowLightbox({ open: true, index: idx })} className="block aspect-square overflow-hidden rounded border focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <img src={im.thumbUrl || im.fullUrl} alt={`item ${idx+1}`} className="w-full h-full object-cover" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+              {showLightbox?.open && (
+                <ImageLightbox images={imgs} index={showLightbox.index || 0} onClose={() => setShowLightbox({ open: false, index: 0 })} />
+              )}
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
