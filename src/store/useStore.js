@@ -1126,9 +1126,10 @@ const useStore = create(
 
         // Initialize from known workers
         Object.values(workers).flat().forEach((name) => {
-          stats[name] = { name, stageCompleted: 0, stages: {}, completedStages: [] };
+          stats[name] = { name, stageCompleted: 0, stages: {}, completedStages: [], assignedItems: [] };
         });
 
+        // Stage completions within selected month
         allItems.forEach((item) => {
           const history = Array.isArray(item.history) ? item.history : [];
           history.forEach((entry) => {
@@ -1138,7 +1139,7 @@ const useStore = create(
             if (entryMonthYear !== monthYear) return;
 
             const workerName = entry.actor;
-            if (!stats[workerName]) stats[workerName] = { name: workerName, stageCompleted: 0, stages: {}, completedStages: [] };
+            if (!stats[workerName]) stats[workerName] = { name: workerName, stageCompleted: 0, stages: {}, completedStages: [], assignedItems: [] };
             stats[workerName].stageCompleted += 1;
             const stageKey = entry?.actionParams?.stage || 'unknown';
             stats[workerName].stages[stageKey] = (stats[workerName].stages[stageKey] || 0) + 1;
@@ -1151,6 +1152,24 @@ const useStore = create(
               timestamp: entry.timestamp,
               customerName: item.customerName
             });
+          });
+        });
+
+        // Currently assigned (pending) items regardless of created month, excluding Ready
+        allItems.forEach((item) => {
+          const assignedTo = item.assignedTo;
+          if (!assignedTo) return;
+          const isPending = String(item.status || '').toLowerCase() !== String(WORKFLOW_STATES.READY).toLowerCase();
+          if (!isPending) return;
+          if (!stats[assignedTo]) stats[assignedTo] = { name: assignedTo, stageCompleted: 0, stages: {}, completedStages: [], assignedItems: [] };
+          stats[assignedTo].assignedItems.push({
+            id: item.id,
+            billNumber: item.billNumber,
+            type: item.type,
+            quantity: item.quantity || 1,
+            customerName: item.customerName,
+            status: item.status,
+            updatedAt: item.updatedAt
           });
         });
 

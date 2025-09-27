@@ -26,7 +26,7 @@ import AdminCompletionDetailsModal from './AdminCompletionDetailsModal';
 const AdminDashboard = () => {
   const currentUser = useStore(s => s.currentUser);
   const logout = useStore(s => s.logout);
-  const getAllItems = useStore(s => s.getAllItems);
+  const clothItems = useStore(s => s.clothItems);
   const assignItemToWorker = useStore(s => s.assignItemToWorker);
   const notifications = useStore(s => s.notifications);
   const markAllMyNotificationsAsRead = useStore(s => s.markAllMyNotificationsAsRead);
@@ -46,7 +46,7 @@ const AdminDashboard = () => {
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileMenuOpen]);
 
-  const allItems = getAllItems();
+  const allItems = clothItems || [];
   const unreadCount = (notifications || []).filter(n => n.userName === currentUser && !n.read).length;
 
   // Get statistics for dashboard

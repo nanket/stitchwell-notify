@@ -164,16 +164,7 @@ const AdminMonthlyAnalytics = () => {
                     {t('analytics.stage_completions')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('analytics.final_completions')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('analytics.completion_rate')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('analytics.stage_breakdown')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('analytics.item_type_breakdown')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('analytics.details.view')}
@@ -206,29 +197,11 @@ const AdminMonthlyAnalytics = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{w.assigned}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{s.stageCompleted}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{w.completed}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(w.completionRate, 100)}%` }}></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">{w.completionRate}%</span>
-                          </div>
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex flex-wrap gap-1">
                             {Object.entries(s.stages).map(([stage, count]) => (
                               <span key={stage} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                 {t(`history.stage.${String(stage).replace(/\s+/g, '_')}`)}: {count}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex flex-wrap gap-1">
-                            {Object.entries(w.itemTypeBreakdown).map(([type, count]) => (
-                              <span key={type} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {trType(type)}: {count}
                               </span>
                             ))}
                           </div>
@@ -245,7 +218,7 @@ const AdminMonthlyAnalytics = () => {
                       </tr>
                       {expanded[name] && (
                         <tr>
-                          <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                          <td colSpan={5} className="px-6 py-4 bg-gray-50">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                               {/* Stage completions */}
                               <div>
@@ -275,24 +248,24 @@ const AdminMonthlyAnalytics = () => {
                                   </ul>
                                 )}
                               </div>
-                              {/* Final completions */}
+                              {/* Currently assigned (pending) */}
                               <div>
-                                <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.final_completions')}</h5>
-                                {((w.completedItems || []).length === 0) ? (
+                                <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.items_assigned')}</h5>
+                                {((s.assignedItems || []).length === 0) ? (
                                   <p className="text-xs text-gray-500">{t('analytics.no_items')}</p>
                                 ) : (
                                   <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
-                                    {(w.completedItems || []).map((ci, idx) => (
+                                    {(s.assignedItems || []).map((ai, idx) => (
                                       <li key={idx} className="p-2 text-sm flex items-center justify-between">
                                         <div className="min-w-0">
                                           <div className="font-medium text-gray-900 truncate">
-                                            {t('table.bill')}: {ci.billNumber}
+                                            {t('table.bill')}: {ai.billNumber}
                                           </div>
                                           <div className="text-xs text-gray-600">
-                                            {t('table.type')}: {trType(ci.type)}{ci.customerName ? ` • ${t('table.customer')}: ${ci.customerName}` : ''}
+                                            {t('table.type')}: {trType(ai.type)}{ai.customerName ? ` • ${t('table.customer')}: ${ai.customerName}` : ''}
                                           </div>
                                         </div>
-                                        <span className="text-xs text-gray-500 flex-shrink-0">{formatTimestamp(ci.completedAt)}</span>
+                                        <span className="text-xs text-gray-500 flex-shrink-0">{t('table.status')}: {t(`history.stage.${String(ai.status || '').replace(/\s+/g, '_')}`) || ai.status}</span>
                                       </li>
                                     ))}
                                   </ul>

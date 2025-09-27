@@ -85,6 +85,11 @@ const TaskCard = ({ task, onComplete, compact = false }) => {
                     {((Number(task?.quantity) || 1) > 1) ? `${Number(task.quantity)}x ${trType(task.type)}` : trType(task.type)}
                   </span>
                 </div>
+                {task.customerName && (
+                  <div className="text-[12px] text-gray-600 mt-0.5">
+                    {t('table.customer')}: {task.customerName}
+                  </div>
+                )}
                 <div className="flex items-center space-x-4 mt-1">
                   <div className="flex items-center space-x-1">
                     <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
@@ -139,6 +144,11 @@ const TaskCard = ({ task, onComplete, compact = false }) => {
               <p className="text-sm text-gray-600">
                 {((Number(task?.quantity) || 1) > 1) ? `${Number(task.quantity)}x ${trType(task.type)}` : trType(task.type)}
               </p>
+              {task.customerName && (
+                <p className="text-sm text-gray-600">
+                  {t('table.customer')}: {task.customerName}
+                </p>
+              )}
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(task.type)}`}>
