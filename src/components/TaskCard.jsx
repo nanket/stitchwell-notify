@@ -77,11 +77,11 @@ const TaskCard = ({ task, onComplete, compact = false }) => {
                 <Package className="h-4 w-4 text-gray-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-medium text-gray-900 truncate">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 gap-1 min-w-0">
+                  <h3 className="font-medium text-gray-900 whitespace-normal break-words leading-snug text-[15px]">
                     {t('card.bill')}: {task.billNumber}
                   </h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(task.type)}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getTypeColor(task.type)}`}>
                     {((Number(task?.quantity) || 1) > 1) ? `${Number(task.quantity)}x ${trType(task.type)}` : trType(task.type)}
                   </span>
                 </div>

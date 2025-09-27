@@ -152,15 +152,13 @@ const WorkerDashboard = () => {
           <div className="flex justify-between items-center h-auto py-3 gap-2 flex-wrap">
             {/* Logo and Title */}
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3">
-                <Scissors className="h-5 w-5 text-white" />
-              </div>
+
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
                   {t('worker.my_tasks')}
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {t('worker.dashboard', { role: currentUserRole })} • {t('worker.name_label')}: <span className="font-medium text-gray-900">{currentUser}</span>
+                  <span className="font-medium text-gray-900">{currentUser}</span>
                 </p>
               </div>
             </div>

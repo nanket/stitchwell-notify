@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { TrendingUp, Users, Package, Clock, Award, BarChart3 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { TrendingUp, Users, Package, Clock, Award, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { useI18n } from '../i18n';
 import useStore from '../store/useStore';
 import {
@@ -89,6 +89,10 @@ const AdminMonthlyAnalytics = () => {
   }, [workerStats, workerStageStats]);
 
 
+  const [expanded, setExpanded] = useState({});
+  const toggleWorker = (name) => setExpanded(prev => ({ ...prev, [name]: !prev[name] }));
+
+
   return (
     <div className="space-y-6">
       {/* Month Selector */}
@@ -171,6 +175,9 @@ const AdminMonthlyAnalytics = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('analytics.item_type_breakdown')}
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('analytics.details.view')}
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -183,49 +190,119 @@ const AdminMonthlyAnalytics = () => {
                   .filter(row => row.w.assigned > 0 || row.w.completed > 0 || row.s.stageCompleted > 0)
                   .sort((a, b) => (b.s.stageCompleted || 0) - (a.s.stageCompleted || 0))
                   .map(({ name, w, s }) => (
-                    <tr key={name} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              {name.charAt(0).toUpperCase()}
-                            </span>
+                    <React.Fragment key={name}>
+                      <tr className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-gray-600">
+                                {name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{name}</div>
+                            </div>
                           </div>
-                          <div className="ml-3">
-                            <div className="text-sm font-medium text-gray-900">{name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{w.assigned}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{s.stageCompleted}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{w.completed}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(w.completionRate, 100)}%` }}></div>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">{w.completionRate}%</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{w.assigned}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{s.stageCompleted}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{w.completed}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(w.completionRate, 100)}%` }}></div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(s.stages).map(([stage, count]) => (
+                              <span key={stage} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {t(`history.stage.${String(stage).replace(/\s+/g, '_')}`)}: {count}
+                              </span>
+                            ))}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{w.completionRate}%</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(s.stages).map(([stage, count]) => (
-                            <span key={stage} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              {t(`history.stage.${stage}`)}: {count}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(w.itemTypeBreakdown).map(([type, count]) => (
-                            <span key={type} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {trType(type)}: {count}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(w.itemTypeBreakdown).map(([type, count]) => (
+                              <span key={type} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {trType(type)}: {count}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => toggleWorker(name)}
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                          >
+                            {expanded[name] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            <span>{t('analytics.details.view')}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {expanded[name] && (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* Stage completions */}
+                              <div>
+                                <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.stage_completions')}</h5>
+                                {((s.completedStages || []).length === 0) ? (
+                                  <p className="text-xs text-gray-500">{t('analytics.no_items')}</p>
+                                ) : (
+                                  <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
+                                    {(s.completedStages || []).map((ci, idx) => (
+                                      <li key={idx} className="p-2 text-sm flex items-center justify-between">
+                                        <div className="min-w-0">
+                                          <div className="font-medium text-gray-900 truncate">
+                                            {t('table.bill')}: {ci.billNumber}
+                                          </div>
+                                          <div className="text-xs text-gray-600">
+                                            {t('table.type')}: {trType(ci.type)}{ci.customerName ? ` • ${t('table.customer')}: ${ci.customerName}` : ''}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800">
+                                            {t(`history.stage.${String(ci.stage).replace(/\s+/g, '_')}`)}
+                                          </span>
+                                          <span className="text-xs text-gray-500">{formatTimestamp(ci.timestamp)}</span>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                              {/* Final completions */}
+                              <div>
+                                <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.final_completions')}</h5>
+                                {((w.completedItems || []).length === 0) ? (
+                                  <p className="text-xs text-gray-500">{t('analytics.no_items')}</p>
+                                ) : (
+                                  <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
+                                    {(w.completedItems || []).map((ci, idx) => (
+                                      <li key={idx} className="p-2 text-sm flex items-center justify-between">
+                                        <div className="min-w-0">
+                                          <div className="font-medium text-gray-900 truncate">
+                                            {t('table.bill')}: {ci.billNumber}
+                                          </div>
+                                          <div className="text-xs text-gray-600">
+                                            {t('table.type')}: {trType(ci.type)}{ci.customerName ? ` • ${t('table.customer')}: ${ci.customerName}` : ''}
+                                          </div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 flex-shrink-0">{formatTimestamp(ci.completedAt)}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
               </tbody>
             </table>

@@ -562,10 +562,6 @@ const translations = {
         view: 'विवरण देखें'
       }
     },
-    common: {
-      total: 'कुल',
-      close: 'बंद करें'
-    },
     workers: {
       manage_title: 'कर्मचारियों का प्रबंधन',
       add_placeholder: '{role} का नाम जोड़ें',
