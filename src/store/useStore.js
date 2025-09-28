@@ -254,7 +254,7 @@ const computeNextTransition = (item, workers) => {
       return { nextState: WORKFLOW_STATES.AWAITING_STITCHING, assignedTo: item.assignedTo || null }; // tailor should already be selected
     case WORKFLOW_STATES.AWAITING_STITCHING:
       if (type === 'pant') {
-        return { nextState: WORKFLOW_STATES.AWAITING_IRONING, assignedTo: workers[USER_ROLES.IRONING_WORKER]?.[0] || null };
+        return { nextState: WORKFLOW_STATES.AWAITING_PACKAGING, assignedTo: workers[USER_ROLES.PACKAGING_WORKER]?.[0] || null };
       }
       return { nextState: WORKFLOW_STATES.AWAITING_KAACH, assignedTo: workers[USER_ROLES.BUTTONING_WORKER]?.[0] || null };
     case WORKFLOW_STATES.AWAITING_KAACH:
@@ -971,7 +971,7 @@ const useStore = create(
             for (const p of paths) {
               try { await deleteObject(ref(storage, p)); } catch (_) {}
             }
-          } catch (_) {}
+          } catch (_) { /* empty */ }
 
           // Update Firestore arrays
           const nextImages = images.filter((im) => (im?.fullUrl || '') !== (image?.fullUrl || ''));
