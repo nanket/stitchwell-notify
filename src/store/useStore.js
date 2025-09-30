@@ -16,6 +16,7 @@ let _db = null;
 let _unsubCloth = null;
 let _unsubWorkers = null;
 let _unsubNotifs = null;
+let _unsubSuits = null;
 
 async function seedWorkersIfEmpty(db) {
   // Seed Firestore with initialWorkers if the collection is empty
@@ -283,6 +284,9 @@ const useStore = create(
 
       // Notification state
       notifications: [],
+
+      // Suit assignments
+      suitAssignments: [],
 
       // Actions
       setCurrentUser: (user, role) => {
@@ -869,6 +873,8 @@ const useStore = create(
               return {
                 id: d.id,
                 ...data,
+                // Normalize billNumber to string for consistent filtering/sorting
+                billNumber: String(data.billNumber ?? ''),
                 createdAt,
                 updatedAt,
                 completedAt,
@@ -894,6 +900,8 @@ const useStore = create(
             // Ensure any unassigned threading items are assigned
             try { await fixUnassignedItems(db, map); } catch (_) {}
           });
+          // Subscribe to suit assignments
+          get()._subscribeSuitAssignments();
         } catch (e) {
           // no-op
         }
@@ -1244,6 +1252,69 @@ const useStore = create(
           itemTypeBreakdown,
           avgCompletionTimeMs: avgCompletionTime
         };
+      },
+
+      // Suit tracking functions
+      assignSuitToWorker: async (billNumber, workerName, customerName = null) => {
+        try {
+          const db = await ensureDb();
+          const payload = {
+            billNumber,
+            workerName,
+            customerName,
+            isReady: false,
+            assignedAt: new Date().toISOString(),
+            updatedAt: serverTimestamp()
+          };
+
+          await addDoc(collection(db, 'suitAssignments'), payload);
+          toast.success(`Suit ${billNumber} assigned to ${workerName}`);
+        } catch (e) {
+          console.error('Error assigning suit:', e);
+          toast.error('Failed to assign suit');
+        }
+      },
+
+      markSuitAsReady: async (assignmentId) => {
+        try {
+          const db = await ensureDb();
+          await updateDoc(doc(db, 'suitAssignments', assignmentId), {
+            isReady: true,
+            readyAt: new Date().toISOString(),
+            updatedAt: serverTimestamp()
+          });
+          toast.success('Suit marked as ready');
+        } catch (e) {
+          console.error('Error marking suit as ready:', e);
+          toast.error('Failed to mark suit as ready');
+        }
+      },
+
+      deleteSuitAssignment: async (assignmentId) => {
+        try {
+          const db = await ensureDb();
+          await deleteDoc(doc(db, 'suitAssignments', assignmentId));
+          toast.success(tGlobal('suit.deleted_successfully'));
+        } catch (e) {
+          console.error('Error deleting suit assignment:', e);
+          toast.error(tGlobal('suit.delete_failed'));
+        }
+      },
+
+      _subscribeSuitAssignments: () => {
+        ensureDb().then(db => {
+          if (_unsubSuits) _unsubSuits();
+          const qSuits = query(collection(db, 'suitAssignments'), orderBy('assignedAt', 'desc'));
+          _unsubSuits = onSnapshot(qSuits, (snap) => {
+            const arr = snap.docs.map(d => ({
+              id: d.id,
+              ...d.data(),
+              assignedAt: toISO(d.data().assignedAt) || d.data().assignedAt,
+              readyAt: toISO(d.data().readyAt) || d.data().readyAt
+            }));
+            set({ suitAssignments: arr });
+          });
+        }).catch(e => console.error('Error subscribing to suit assignments:', e));
       }
     }),
     {

@@ -10,7 +10,9 @@ import {
   Database,
   Menu,
   X,
-  BarChart3
+  BarChart3,
+  Package,
+  Shirt
 } from 'lucide-react';
 import useStore, { WORKFLOW_STATES } from '../store/useStore';
 import AdminListView from './AdminListView';
@@ -22,6 +24,7 @@ import { useI18n } from '../i18n';
 import LanguageSwitcher from './LanguageSwitcher';
 import MonthlyCompletionCard from './MonthlyCompletionCard';
 import AdminCompletionDetailsModal from './AdminCompletionDetailsModal';
+import AdminSuitTracking from './AdminSuitTracking';
 
 const AdminDashboard = () => {
   const currentUser = useStore(s => s.currentUser);
@@ -38,6 +41,7 @@ const AdminDashboard = () => {
   const [showManageWorkers, setShowManageWorkers] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [currentView, setCurrentView] = useState('workflow'); // 'workflow' or 'suit'
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -308,20 +312,61 @@ const AdminDashboard = () => {
           <MonthlyCompletionCard />
         </div>
 
-        {/* Table Only */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t('admin.table_title')}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {t('admin.table_subtitle')}
-            </p>
-          </div>
-          <div className="p-6">
-            <AdminListView items={allItems} onAssignToTailor={handleAssignToTailor} />
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              <button
+                onClick={() => setCurrentView('workflow')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  currentView === 'workflow'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Package className="h-4 w-4" />
+                  <span>Workflow</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setCurrentView('suit')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  currentView === 'suit'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Shirt className="h-4 w-4" />
+                  <span>Suit</span>
+                </div>
+              </button>
+            </nav>
           </div>
         </div>
+
+        {/* Workflow View */}
+        {currentView === 'workflow' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t('admin.table_title')}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('admin.table_subtitle')}
+              </p>
+            </div>
+            <div className="p-6">
+              <AdminListView items={allItems} onAssignToTailor={handleAssignToTailor} />
+            </div>
+          </div>
+        )}
+
+        {/* Suit Tracking View */}
+        {currentView === 'suit' && (
+          <AdminSuitTracking />
+        )}
       </div>
 
       {/* Modals */}

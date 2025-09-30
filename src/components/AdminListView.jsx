@@ -65,11 +65,20 @@ const AdminListView = ({ items, onAssignToTailor }) => {
     let list = items;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter(i =>
-        i.billNumber.toLowerCase().includes(q) ||
-        i.type.toLowerCase().includes(q) ||
-        (i.assignedTo || '').toLowerCase().includes(q)
-      );
+      const digitsOnly = /^[0-9]+$/.test(q);
+      list = list.filter(i => {
+        const bill = String(i.billNumber ?? '').toLowerCase();
+        if (digitsOnly) {
+          // For pure numeric queries, restrict to bill number prefix only
+          return bill.startsWith(q);
+        }
+        return (
+          bill.startsWith(q) ||
+          i.type.toLowerCase().includes(q) ||
+          (i.assignedTo || '').toLowerCase().includes(q) ||
+          (i.customerName || '').toLowerCase().includes(q)
+        );
+      });
     }
     if (status) list = list.filter(i => i.status === status);
     if (type) list = list.filter(i => i.type === type);
@@ -88,10 +97,10 @@ const AdminListView = ({ items, onAssignToTailor }) => {
         };
         return (toMs(va) - toMs(vb)) * (sortDir === 'asc' ? 1 : -1);
       }
-      if (typeof va === 'string' && typeof vb === 'string') {
-        return va.localeCompare(vb) * (sortDir === 'asc' ? 1 : -1);
-      }
-      return 0;
+      // Convert to strings for comparison (handles both string and number types)
+      const strA = String(va || '').toLowerCase();
+      const strB = String(vb || '').toLowerCase();
+      return strA.localeCompare(strB) * (sortDir === 'asc' ? 1 : -1);
     });
 
 

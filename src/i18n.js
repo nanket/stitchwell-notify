@@ -81,7 +81,7 @@ const translations = {
     },
     filters: {
       search: 'Search',
-      search_placeholder: 'Bill #, Type or Assignee',
+      search_placeholder: 'Bill #, Type, Customer or Assignee',
       status: 'Status',
       type: 'Type',
       assignee: 'Assignee',
@@ -366,8 +366,34 @@ const translations = {
           body_2: 'Please proceed with {stage}'
         }
       }
-    }
-    ,history: {
+    },
+    suit: {
+      tracking: 'Suit Tracking',
+      tracking_subtitle: 'Assign and track suit work for specific workers',
+      assign_form_title: 'Assign Suit to Worker',
+      bill_number: 'Bill Number',
+      bill_placeholder: 'Enter bill number',
+      select_worker: 'Select Worker',
+      choose_worker: 'Choose a worker...',
+      assign_suit: 'Assign Suit',
+      assigning: 'Assigning...',
+      assignments_title: 'Suit Assignments',
+      assignments_count: '{count} assignment{plural}',
+      worker: 'Worker',
+      assigned: 'Assigned',
+      ready: 'Ready',
+      pending: 'Pending',
+      mark_ready: 'Mark Ready',
+      delete_assignment: 'Delete',
+      confirm_delete: 'Are you sure you want to delete this suit assignment?',
+      deleted_successfully: 'Suit assignment deleted successfully',
+      delete_failed: 'Failed to delete suit assignment',
+      no_assignments: 'No suit assignments found',
+      total_suits: 'Total Suits',
+      search_placeholder: 'Search by bill #, worker, or customer...',
+      all_status: 'All Status'
+    },
+    history: {
       actions: {
         created_by_admin: 'Item created by Admin',
         assigned_for_stage: 'Assigned to {name} for {stage}',
@@ -442,7 +468,7 @@ const translations = {
     },
     filters: {
       search: 'खोज',
-      search_placeholder: 'बिल #, प्रकार या असाइनी',
+      search_placeholder: 'बिल #, प्रकार, ग्राहक या असाइनी',
       status: 'स्थिति',
       type: 'प्रकार',
       assignee: 'असाइनी',
@@ -724,8 +750,34 @@ const translations = {
           body_2: 'कृपया {stage} करें'
         }
       }
-    }
-    ,history: {
+    },
+    suit: {
+      tracking: 'सूट ट्रैकिंग',
+      tracking_subtitle: 'विशिष्ट कारीगरों के लिए सूट कार्य असाइन और ट्रैक करें',
+      assign_form_title: 'कारीगर को सूट असाइन करें',
+      bill_number: 'बिल नंबर',
+      bill_placeholder: 'बिल नंबर दर्ज करें',
+      select_worker: 'कारीगर चुनें',
+      choose_worker: 'कारीगर चुनें...',
+      assign_suit: 'सूट असाइन करें',
+      assigning: 'असाइन कर रहे हैं...',
+      assignments_title: 'सूट असाइनमेंट',
+      assignments_count: '{count} असाइनमेंट{plural}',
+      worker: 'कारीगर',
+      assigned: 'असाइन किया गया',
+      ready: 'तैयार',
+      pending: 'बाकी',
+      mark_ready: 'तैयार मार्क करें',
+      delete_assignment: 'हटाएँ',
+      confirm_delete: 'क्या आप वाकई इस सूट असाइनमेंट को हटाना चाहते हैं?',
+      deleted_successfully: 'सूट असाइनमेंट सफलतापूर्वक हटाया गया',
+      delete_failed: 'सूट असाइनमेंट हटाने में विफल',
+      no_assignments: 'कोई सूट असाइनमेंट नहीं मिला',
+      total_suits: 'कुल सूट',
+      search_placeholder: 'बिल #, कारीगर या ग्राहक से खोजें...',
+      all_status: 'सभी स्थिति'
+    },
+    history: {
       actions: {
         created_by_admin: 'एडमिन द्वारा आइटम बनाया गया',
         assigned_for_stage: '{stage} के लिए {name} को असाइन किया गया',

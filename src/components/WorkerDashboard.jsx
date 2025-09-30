@@ -76,12 +76,17 @@ const WorkerDashboard = () => {
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
-      tasks = tasks.filter(task =>
-        task.billNumber?.toLowerCase().includes(query) ||
-        task.type?.toLowerCase().includes(query) ||
-        task.customerName?.toLowerCase().includes(query) ||
-        task.status?.toLowerCase().includes(query)
-      );
+      const digitsOnly = /^[0-9]+$/.test(query);
+      tasks = tasks.filter(task => {
+        const bill = String(task.billNumber ?? '').toLowerCase();
+        if (digitsOnly) return bill.startsWith(query);
+        return (
+          bill.startsWith(query) ||
+          task.type?.toLowerCase().includes(query) ||
+          task.customerName?.toLowerCase().includes(query) ||
+          task.status?.toLowerCase().includes(query)
+        );
+      });
     }
 
     // Apply status filter
