@@ -178,6 +178,10 @@ const translations = {
       top_category: 'Top Category',
       more_items: 'more items',
       active_workers: 'Active Workers',
+      daily_assignments: 'Daily Assignment Summary',
+      daily_completions: 'Daily Completion Summary',
+      assigned_label: 'assigned',
+      completed_label: 'completed',
       monthly_completion: {
         title: 'Completed this month',
         select_month: 'Select month'
@@ -565,6 +569,10 @@ const translations = {
       top_category: 'मुख्य श्रेणी',
       more_items: 'और वस्त्र',
       active_workers: 'सक्रिय कारीगर',
+      daily_assignments: 'दैनिक असाइनमेंट सारांश',
+      daily_completions: 'दैनिक पूर्णता सारांश',
+      assigned_label: 'सौंपे गए',
+      completed_label: 'पूर्ण किए गए',
       monthly_completion: {
         title: 'इस माह पूर्ण',
         select_month: 'महीना चुनें'
@@ -854,6 +862,7 @@ export function I18nProvider({ children }) {
 
   const value = useMemo(() => ({
     lang,
+    currentLanguage: lang,
     t: (k, p) => tGlobal(k, p),
     setLanguage: setLanguageGlobal,
     trStatus: translateStatus,

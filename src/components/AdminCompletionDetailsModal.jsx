@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { useI18n } from '../i18n';
-import AdminMonthlyAnalytics from './AdminMonthlyAnalytics';
+import AdminAnalytics from './AdminAnalytics';
 
 export default function AdminCompletionDetailsModal({ onClose }) {
   const { t } = useI18n();
@@ -23,7 +23,7 @@ export default function AdminCompletionDetailsModal({ onClose }) {
         </div>
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <AdminMonthlyAnalytics />
+          <AdminAnalytics />
         </div>
       </div>
     </div>

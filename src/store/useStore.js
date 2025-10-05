@@ -1184,6 +1184,101 @@ const useStore = create(
         return stats;
       },
 
+
+	      // Generic date-range analytics (Admin)
+	      _inRange: (iso, start, end) => {
+	        if (!iso) return false;
+	        try {
+	          const t = new Date(iso).getTime();
+	          const s = start ? new Date(start).getTime() : -Infinity;
+	          const e = end ? new Date(end).getTime() : Infinity;
+	          return t >= s && t <= e;
+	        } catch (_) { return false; }
+	      },
+
+	      getCompletionsInRange: (start, end) => {
+	        const state = get();
+	        return (state.clothItems || []).filter(item =>
+	          String(item.status || '').toLowerCase() === String(WORKFLOW_STATES.READY).toLowerCase() &&
+	          state._inRange(item.completedAt, start, end)
+	        );
+	      },
+
+	      getAssignmentsInRange: (start, end) => {
+	        const state = get();
+	        return (state.clothItems || []).filter(item => state._inRange(item.createdAt, start, end));
+	      },
+
+	      getWorkerStatsInRange: (start, end) => {
+	        const state = get();
+	        const assignedItems = state.getAssignmentsInRange(start, end);
+	        const completedItems = state.getCompletionsInRange(start, end);
+	        const workers = state.workers || {};
+	        const workerStats = {};
+	        Object.values(workers).flat().forEach(name => {
+	          workerStats[name] = { name, assigned: 0, completed: 0, completionRate: 0, completedItems: [], itemTypeBreakdown: {} };
+	        });
+	        assignedItems.forEach(item => {
+	          if (item.assignedTo) {
+	            workerStats[item.assignedTo] = workerStats[item.assignedTo] || { name: item.assignedTo, assigned: 0, completed: 0, completionRate: 0, completedItems: [], itemTypeBreakdown: {} };
+	            workerStats[item.assignedTo].assigned += 1;
+	          }
+	        });
+	        completedItems.forEach(item => {
+	          if (item.completedBy) {
+	            const w = workerStats[item.completedBy] = workerStats[item.completedBy] || { name: item.completedBy, assigned: 0, completed: 0, completionRate: 0, completedItems: [], itemTypeBreakdown: {} };
+	            w.completed += 1;
+	            w.completedItems.push({ id: item.id, billNumber: item.billNumber, type: item.type, quantity: item.quantity || 1, completedAt: item.completedAt, customerName: item.customerName });
+	            const type = item.type || 'Unknown';
+	            const qty = item.quantity || 1;
+	            w.itemTypeBreakdown[type] = (w.itemTypeBreakdown[type] || 0) + qty;
+	          }
+	        });
+	        Object.values(workerStats).forEach(w => { if (w.assigned > 0) w.completionRate = Math.round((w.completed / w.assigned) * 100); });
+	        return workerStats;
+	      },
+
+	      getWorkerStageStatsInRange: (start, end) => {
+	        const state = get();
+	        const all = state.clothItems || [];
+	        const stats = {};
+	        const ensure = (name) => (stats[name] = stats[name] || { name, stageCompleted: 0, stages: {}, completedStages: [], assignedItems: [] });
+	        all.forEach(item => {
+	          const hist = Array.isArray(item.history) ? item.history : [];
+	          hist.forEach(entry => {
+	            if (entry?.actionCode !== 'completed_stage' || !entry?.actor || !entry?.timestamp) return;
+	            const ts = entry.timestamp;
+	            if (!state._inRange(ts, start, end)) return;
+	            const w = ensure(entry.actor);
+	            w.stageCompleted += 1;
+	            const stageKey = entry?.actionParams?.stage || 'unknown';
+	            w.stages[stageKey] = (w.stages[stageKey] || 0) + 1;
+	            w.completedStages.push({ id: item.id, billNumber: item.billNumber, type: item.type, quantity: item.quantity || 1, stage: stageKey, timestamp: ts, customerName: item.customerName });
+	          });
+	        });
+	        all.forEach(item => {
+	          const a = item.assignedTo;
+	          const pending = String(item.status || '').toLowerCase() !== String(WORKFLOW_STATES.READY).toLowerCase();
+	          if (a && pending) {
+	            const w = ensure(a);
+	            w.assignedItems.push({ id: item.id, billNumber: item.billNumber, type: item.type, quantity: item.quantity || 1, customerName: item.customerName, status: item.status, updatedAt: item.updatedAt });
+	          }
+	        });
+	        return stats;
+	      },
+
+	      getItemTypeBreakdownInRange: (start, end) => {
+	        const state = get();
+	        const list = state.getCompletionsInRange(start, end);
+	        const breakdown = {};
+	        list.forEach(item => {
+	          const type = item.type || 'Unknown';
+	          const qty = item.quantity || 1;
+	          breakdown[type] = (breakdown[type] || 0) + qty;
+	        });
+	        return breakdown;
+	      },
+
       getWorkerPersonalStats: (workerName, year, month) => {
         const state = get();
         const monthYear = `${year}-${String(month).padStart(2, '0')}`;

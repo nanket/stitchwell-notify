@@ -21,23 +21,105 @@ export const formatTimestamp = (timestamp, locale = 'en') => {
   try {
     const date = typeof timestamp?.toDate === 'function' ? timestamp.toDate() : new Date(timestamp);
     if (isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString(locale, { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   } catch {
     return '—';
   }
 };
 
+// Week helpers and selectors
+export const startOfWeek = (date, weekStartsOn = 1) => {
+  const d = new Date(date);
+  const day = d.getDay(); // 0-6 (Sun-Sat)
+  const diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+export const endOfWeek = (date, weekStartsOn = 1) => {
+  const start = startOfWeek(date, weekStartsOn);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+export const formatWeekRange = (start, end, locale = 'en') => {
+  const s = new Date(start);
+  const e = new Date(end);
+  const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+  const sStr = s.toLocaleDateString(locale, { month: sameMonth ? 'short' : 'short', day: 'numeric' });
+  const eStr = e.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: !sameMonth ? 'numeric' : undefined });
+  const yearStr = sameMonth ? `, ${s.getFullYear()}` : '';
+  return `Week of ${sStr}-${eStr}${yearStr}`;
+};
+
+export const WeekSelector = ({ currentStart, currentEnd, onChange, className = '' }) => {
+  const { currentLanguage } = useI18n();
+  const go = (deltaWeeks) => {
+    const start = new Date(currentStart);
+    start.setDate(start.getDate() + deltaWeeks * 7);
+    const end = endOfWeek(start);
+    onChange(start, end);
+  };
+  return (
+    <div className={`flex flex-col sm:flex-row sm:items-center justify-between bg-white rounded-lg border border-gray-200 p-4 gap-4 ${className}`}>
+      <div className="flex items-center space-x-3">
+        <Calendar className="h-5 w-5 text-gray-500 flex-shrink-0" />
+        <h3 className="text-lg font-semibold text-gray-900">
+          {formatWeekRange(currentStart, currentEnd, currentLanguage)}
+        </h3>
+      </div>
+      <div className="flex items-center justify-center sm:justify-end space-x-2">
+        <button onClick={() => go(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Previous week">
+          <ChevronLeft className="h-4 w-4 text-gray-600" />
+        </button>
+        <button onClick={() => go(1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Next week">
+          <ChevronRight className="h-4 w-4 text-gray-600" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export const DateRangePicker = ({ startDate, endDate, onChange, className = '' }) => {
+  const onStart = (e) => {
+    const s = e.target.value ? new Date(e.target.value) : null;
+    onChange(s, endDate);
+  };
+  const onEnd = (e) => {
+    const eDate = e.target.value ? new Date(e.target.value) : null;
+    if (eDate) eDate.setHours(23,59,59,999);
+    onChange(startDate, eDate);
+  };
+  const fmt = (d) => d ? new Date(d).toISOString().slice(0,10) : '';
+  return (
+    <div className={`bg-white rounded-lg border border-gray-200 p-4 flex flex-col sm:flex-row gap-3 ${className}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-600">From</span>
+        <input type="date" value={fmt(startDate)} onChange={onStart} className="input h-9 text-sm" />
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-600">To</span>
+        <input type="date" value={fmt(endDate)} onChange={onEnd} className="input h-9 text-sm" />
+      </div>
+    </div>
+  );
+};
+
+
 export const formatDuration = (milliseconds) => {
   if (!milliseconds || milliseconds <= 0) return '—';
-  
+
   const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
   const hours = Math.floor((milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  
+
   if (days > 0) {
     return `${days}d ${hours}h`;
   } else if (hours > 0) {
@@ -134,9 +216,9 @@ export const StatCard = ({ icon: Icon, title, value, subtitle, color = 'blue', c
 // Item type breakdown component
 export const ItemTypeBreakdown = ({ breakdown, title, className = '' }) => {
   const { t, trType } = useI18n();
-  
+
   const total = Object.values(breakdown).reduce((sum, count) => sum + count, 0);
-  
+
   if (total === 0) {
     return (
       <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
