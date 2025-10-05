@@ -1,32 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { TrendingUp, Users, Package, Clock, Award, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { useI18n } from '../i18n';
-import useStore, { WORKFLOW_STATES } from '../store/useStore';
+import useStore from '../store/useStore';
 import {
   StatCard,
   ItemTypeBreakdown,
   CompletedItemsList,
   formatDuration,
-  formatTimestamp,
   WeekSelector,
   DateRangePicker,
   startOfWeek,
   endOfWeek,
 } from './MonthlyAnalytics';
 
-const stageKeyFromStatus = (status) => {
-  switch (status) {
-    case WORKFLOW_STATES.AWAITING_CUTTING: return 'cutting';
-    case WORKFLOW_STATES.AWAITING_THREAD_MATCHING: return 'thread_matching';
-    case WORKFLOW_STATES.AWAITING_TAILOR_ASSIGNMENT: return 'tailor_assignment';
-    case WORKFLOW_STATES.AWAITING_STITCHING: return 'stitching';
-    case WORKFLOW_STATES.AWAITING_KAACH: return 'kaach';
-    case WORKFLOW_STATES.AWAITING_IRONING: return 'ironing';
-    case WORKFLOW_STATES.AWAITING_PACKAGING: return 'packaging';
-    case WORKFLOW_STATES.READY: return 'ready';
-    default: return String(status || '').toLowerCase().replace(/\s+/g, '_');
-  }
-};
 
 const AdminAnalytics = () => {
   const { t, trType, currentLanguage } = useI18n();
@@ -34,9 +20,9 @@ const AdminAnalytics = () => {
     getCompletionsInRange,
     getWorkerStatsInRange,
     getWorkerStageStatsInRange,
-    getItemTypeBreakdownInRange,
-    getAssignmentsInRange
+    getItemTypeBreakdownInRange
   } = useStore();
+  const clothItems = useStore(state => state.clothItems);
 
   // Filter mode and time range
   const [mode, setMode] = useState('week'); // 'week' | 'range'
@@ -106,19 +92,35 @@ const AdminAnalytics = () => {
   const [expanded, setExpanded] = useState({});
   const toggleWorker = (name) => setExpanded(prev => ({ ...prev, [name]: !prev[name] }));
 
-  const groupCompletedByBill = (items) => {
-    const grouped = {};
-    (items || []).forEach(ci => {
-      const bill = String(ci.billNumber || '');
-      if (!grouped[bill]) grouped[bill] = {};
-      const type = ci.type || 'Unknown';
-      const qty = ci.quantity || 1;
-      grouped[bill][type] = (grouped[bill][type] || 0) + qty;
-    });
-    return grouped;
-  };
 
-  const assignmentsInRange = useMemo(() => getAssignmentsInRange(activeStart, activeEnd), [activeStart, activeEnd, getAssignmentsInRange]);
+  // Build assignment events from item history: includes both explicit 'assigned_for_stage' and
+  // implicit assignments that happen at stage completion (entry.actionCode === 'completed_stage' with entry.assignedTo)
+  const assignmentEventsInRange = useMemo(() => {
+    const events = [];
+    const items = clothItems || [];
+    for (const item of items) {
+      const hist = Array.isArray(item.history) ? item.history : [];
+      for (const entry of hist) {
+        const ts = entry?.timestamp;
+        if (!ts) continue;
+        const d = new Date(ts);
+        if (d < activeStart || d > activeEnd) continue;
+        const isExplicitAssign = entry?.actionCode === 'assigned_for_stage';
+        const isImplicitAssign = entry?.actionCode === 'completed_stage' && !!entry?.assignedTo;
+        if (!isExplicitAssign && !isImplicitAssign) continue;
+        const recipient = entry?.assignedTo || entry?.actionParams?.name;
+        if (!recipient) continue;
+        events.push({
+          assignedTo: recipient,
+          timestamp: ts,
+          billNumber: item.billNumber,
+          type: item.type,
+          quantity: item.quantity || 1,
+        });
+      }
+    }
+    return events;
+  }, [clothItems, activeStart, activeEnd]);
 
   const groupDaily = (items, dateField) => {
     const map = {};
@@ -204,10 +206,8 @@ const AdminAnalytics = () => {
                   }))
                   .filter(row => row.w.assigned > 0 || row.w.completed > 0 || row.s.stageCompleted > 0)
                   .sort((a, b) => (b.s.stageCompleted || 0) - (a.s.stageCompleted || 0))
-                  .map(({ name, w, s }) => {
-                    const grouped = groupCompletedByBill(w.completedItems);
-                    return (
-                      <React.Fragment key={name}>
+                  .map(({ name, w, s }) => (
+                    <React.Fragment key={name}>
                         <tr className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -240,71 +240,7 @@ const AdminAnalytics = () => {
                         {expanded[name] && (
                           <tr>
                             <td colSpan={5} className="px-6 py-4 bg-gray-50">
-                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                {/* Stage completions */}
-                                <div className="lg:col-span-1">
-                                  <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.stage_completions')}</h5>
-                                  {((s.completedStages || []).length === 0) ? (
-                                    <p className="text-xs text-gray-500">{t('analytics.no_items')}</p>
-                                  ) : (
-                                    <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
-                                      {(s.completedStages || []).map((ci, idx) => (
-                                        <li key={idx} className="p-2 text-sm flex items-center justify-between">
-                                          <div className="min-w-0">
-                                            <div className="font-medium text-gray-900 truncate">{t('table.bill')}: {ci.billNumber}</div>
-                                            <div className="text-xs text-gray-600">{t('table.type')}: {trType(ci.type)}{ci.customerName ? ` • ${t('table.customer')}: ${ci.customerName}` : ''}</div>
-                                          </div>
-                                          <div className="flex items-center gap-2 flex-shrink-0">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800">{t(`history.stage.${String(ci.stage).replace(/\s+/g, '_')}`)}</span>
-                                            <span className="text-xs text-gray-500">{formatTimestamp(ci.timestamp)}</span>
-                                          </div>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                                {/* Currently assigned (pending) */}
-                                <div className="lg:col-span-1">
-                                  <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.items_assigned')}</h5>
-                                  {((s.assignedItems || []).length === 0) ? (
-                                    <p className="text-xs text-gray-500">{t('analytics.no_items')}</p>
-                                  ) : (
-                                    <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
-                                      {(s.assignedItems || []).map((ai, idx) => (
-                                        <li key={idx} className="p-2 text-sm flex items-center justify-between">
-                                          <div className="min-w-0">
-                                            <div className="font-medium text-gray-900 truncate">{t('table.bill')}: {ai.billNumber}</div>
-                                            <div className="text-xs text-gray-600">{t('table.type')}: {trType(ai.type)}{ai.customerName ? ` • ${t('table.customer')}: ${ai.customerName}` : ''}</div>
-                                          </div>
-                                          <span className="text-xs text-gray-500 flex-shrink-0">{t('table.status')}: {t(`history.stage.${stageKeyFromStatus(ai.status)}`) || ai.status}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                                {/* Final completions grouped by bill */}
-                                <div className="lg:col-span-1">
-                                  <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.completion_details')}</h5>
-                                  {Object.keys(grouped).length === 0 ? (
-                                    <p className="text-xs text-gray-500">{t('analytics.no_completions')}</p>
-                                  ) : (
-                                    <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
-                                      {Object.entries(grouped).map(([bill, typeMap]) => (
-                                        <li key={bill} className="p-2 text-sm">
-                                          <div className="font-medium text-gray-900">{name} - {t('card.bill')} #{bill}</div>
-                                          <div className="text-xs text-gray-600">
-                                            {Object.entries(typeMap).map(([type, qty], i, arr) => (
-                                              <span key={type}>
-                                                {qty}x {trType(type)}{i < arr.length - 1 ? ', ' : ''}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                              </div>
+
 
                               {/* Daily summaries: assignments and completions */}
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
@@ -312,8 +248,8 @@ const AdminAnalytics = () => {
                                 <div>
                                   <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.daily_assignments')}</h5>
                                   {(() => {
-                                    const workerAssignments = (assignmentsInRange || []).filter(it => it.assignedTo === name);
-                                    const dailyAssign = groupDaily(workerAssignments, 'createdAt');
+                                    const workerAssignments = (assignmentEventsInRange || []).filter(ev => ev.assignedTo === name);
+                                    const dailyAssign = groupDaily(workerAssignments, 'timestamp');
                                     if (dailyAssign.length === 0) return <p className="text-xs text-gray-500">{t('analytics.no_items')}</p>;
                                     return (
                                       <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 overflow-hidden">
@@ -338,7 +274,7 @@ const AdminAnalytics = () => {
                                 <div>
                                   <h5 className="text-sm font-semibold text-gray-900 mb-2">{t('analytics.daily_completions')}</h5>
                                   {(() => {
-                                    // Use stage completions (s.completedStages) which includes all stages completed by this worker
+                                    // Stage completions: count when the worker clicks Mark Complete on their stage
                                     const stageCompletions = s.completedStages || [];
                                     const dailyComplete = groupDaily(stageCompletions, 'timestamp');
                                     if (dailyComplete.length === 0) return <p className="text-xs text-gray-500">{t('analytics.no_completions')}</p>;
@@ -366,8 +302,8 @@ const AdminAnalytics = () => {
                         )}
 
                       </React.Fragment>
-                    );
-                  })}
+                    )
+                  )}
               </tbody>
             </table>
           </div>
