@@ -1020,6 +1020,70 @@ const useStore = create(
         }
       },
 
+	      // Update basic item details (Admin only): type, quantity, billNumber
+	      updateClothItemDetails: async (itemId, { type, quantity, billNumber }) => {
+	        const state = get();
+	        // Admin guard (reuse existing message)
+	        if (state.currentUserRole !== USER_ROLES.ADMIN) {
+	          toast.error(tGlobal('store.only_admin_delete'));
+	          return false;
+	        }
+	        const item = state.clothItems.find(i => i.id === itemId);
+	        if (!item) { toast.error(tGlobal('store.item_not_found')); return false; }
+	        try {
+	          const db = await ensureDb();
+	          const next = {};
+	          const changes = [];
+	          // Bill number
+	          if (typeof billNumber === 'string') {
+	            const nextBill = billNumber.trim();
+	            if (nextBill !== String(item.billNumber ?? '')) {
+	              next.billNumber = nextBill;
+	              changes.push(`${tGlobal('table.bill')}: ${String(item.billNumber ?? '')} \u2192 ${nextBill}`);
+	            }
+	          }
+	          // Type
+	          if (type && type !== item.type) {
+	            next.type = type;
+	            changes.push(`${tGlobal('common.type')}: ${translateClothType(item.type)} \u2192 ${translateClothType(type)}`);
+	          }
+	          // Quantity
+	          const nextQty = Number(quantity);
+	          if (!Number.isNaN(nextQty) && nextQty >= 1 && nextQty !== Number(item.quantity || 1)) {
+	            next.quantity = nextQty;
+	            changes.push(`${tGlobal('create_item.quantity')}: ${Number(item.quantity || 1)} \u2192 ${nextQty}`);
+	          }
+	          // If nothing changed, just acknowledge success
+	          if (Object.keys(next).length === 0) {
+	            toast.success(tGlobal('store.updated_ok'));
+	            return true;
+	          }
+	          const history = Array.isArray(item.history) ? item.history : [];
+	          const action = tGlobal('history.actions.details_edited', { changes: changes.join(', ') });
+	          const newHistory = [
+	            ...history,
+	            {
+	              status: item.status,
+	              assignedTo: item.assignedTo || null,
+	              timestamp: new Date().toISOString(),
+	              action,
+	              actionCode: 'details_edited',
+	              actionParams: { changes }
+	            }
+	          ];
+	          next.updatedAt = serverTimestamp();
+	          next.history = newHistory;
+	          await updateDoc(doc(db, 'clothItems', itemId), next);
+	          toast.success(tGlobal('store.updated_ok'));
+	          return true;
+	        } catch (e) {
+	          console.error('updateClothItemDetails error', e);
+	          toast.error(tGlobal('store.failed_update'));
+	          return false;
+	        }
+	      },
+
+
       // Get all items (Admin view)
       getAllItems: () => {
         return get().clothItems;

@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Filter, ArrowUpDown, User, Package, Trash2, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, User, Package, Trash2, ChevronDown, ChevronUp, X, Pencil } from 'lucide-react';
 import useStore, { WORKFLOW_STATES, USER_ROLES } from '../store/useStore';
 import ConfirmDialog from './ConfirmDialog';
 import { useI18n } from '../i18n';
 import ImageLightbox from './ImageLightbox';
+import EditItemModal from './EditItemModal';
+
 
 const STATUSES = Object.values(WORKFLOW_STATES);
 const TYPES = ['Shirt', 'Pant', 'Kurta', 'Safari'];
@@ -31,6 +33,8 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [sortKey, setSortKey] = useState('updatedAt');
+  const [editDialog, setEditDialog] = useState({ isOpen: false, item: null });
+
   const [sortDir, setSortDir] = useState('desc');
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, item: null });
 
@@ -139,7 +143,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
     return h?.action || '';
   };
 
-  
+
 
 
   const handleDeleteClick = (item) => {
@@ -154,7 +158,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
   };
 
   const isAdmin = currentUserRole === USER_ROLES.ADMIN;
-  
+
   // Check if any items have customer names to determine if we should show the customer column
   const hasCustomerNames = useMemo(() => {
     return items.some(item => item.customerName && item.customerName.trim());
@@ -174,7 +178,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
               placeholder={t('filters.search_placeholder')}
               className="input pl-9 w-full"
             />
-     
+
           </div>
         </div>
         <div className="min-w-[150px]">
@@ -252,9 +256,23 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                       <span className="text-xs sm:text-sm truncate">{item.assignedTo || '—'}</span>
                     </div>
                   </td>
+
                   <td className="px-2 sm:px-3 py-2 text-gray-600 text-xs sm:text-sm hidden sm:table-cell">{formatDate(item.updatedAt)}</td>
                   <td className="px-2 sm:px-3 py-2 align-top">
                     <div className="flex flex-col gap-1 sm:gap-2 min-w-0">
+                      {isAdmin && (
+                        <button
+                          onClick={() => setEditDialog({ isOpen: true, item })}
+                          className="btn-secondary min-h-0 h-8 px-2 py-1 text-xs w-full sm:w-auto"
+                          title={t('table.edit') || 'Edit'}
+                        >
+                          <span className="inline-flex items-center gap-1 justify-center">
+                            <Pencil className="h-3 w-3" />
+                            <span className="hidden sm:inline text-xs">{t('table.edit') || 'Edit'}</span>
+                          </span>
+                        </button>
+                      )}
+
                       {isAdmin && (
                         <button
                           onClick={() => toggleExpand(item.id)}
@@ -267,6 +285,7 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                             <span className="inline-flex items-center gap-1 justify-center">
                               <ChevronUp className="h-3 w-3" />
                               <span className="hidden sm:inline text-xs">{t('table.history') || 'History'}</span>
+
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 justify-center">
@@ -301,15 +320,15 @@ const AdminListView = ({ items, onAssignToTailor }) => {
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-2">
                               {imgs.slice(0, 3).map((im, idx) => (
                                 <div key={idx} className="relative group">
-                                  <button 
-                                    onClick={() => setLightbox({ open: true, images: imgs, index: idx })} 
+                                  <button
+                                    onClick={() => setLightbox({ open: true, images: imgs, index: idx })}
                                     className="block aspect-square overflow-hidden rounded border w-full h-12 sm:h-16"
                                   >
-                                    <img 
-                                      src={im.thumbUrl || im.fullUrl} 
-                                      alt={`thumb ${idx+1}`} 
-                                      className="w-full h-full object-cover" 
-                                      loading="lazy" 
+                                    <img
+                                      src={im.thumbUrl || im.fullUrl}
+                                      alt={`thumb ${idx+1}`}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
                                     />
                                   </button>
                                   {isAdmin && (
@@ -423,6 +442,14 @@ const AdminListView = ({ items, onAssignToTailor }) => {
       </div>
 
       {/* Delete Confirmation Dialog */}
+      {/* Edit Item Modal */}
+      {editDialog.isOpen && (
+        <EditItemModal
+          item={editDialog.item}
+          onClose={() => setEditDialog({ isOpen: false, item: null })}
+        />
+      )}
+
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, item: null })}

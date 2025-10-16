@@ -97,6 +97,8 @@ const translations = {
       updated: 'Updated',
       actions: 'Actions',
       delete: 'Delete',
+      edit: 'Edit',
+
       empty: 'No items found',
       assign_tailor: 'Assign tailor...',
       override_assign: 'Override assign...',
@@ -229,8 +231,7 @@ const translations = {
       creating: 'Creating...',
       error_select_type: 'Please select a cloth type',
       error_bill_required: 'Bill number is required',
-      error_bill_exists: 'Bill number already exists'
-      ,
+      error_bill_exists: 'Bill number already exists',
       quantity: 'Quantity *',
       quantity_placeholder: 'Enter quantity',
       error_quantity_min: 'Quantity must be at least 1',
@@ -241,7 +242,12 @@ const translations = {
       photo_hint: 'Use camera or gallery',
       uploading: 'Uploading',
       upload_error: 'Upload failed. Please try again.'
-
+    },
+    edit_item: {
+      title: 'Edit Item',
+      subtitle: 'Modify cloth item details',
+      save: 'Save Changes',
+      saving: 'Saving...'
     },
     card: {
       bill: 'Bill #',
@@ -317,6 +323,9 @@ const translations = {
       only_admin_delete: 'Only admin users can delete items!',
       deleted_ok: 'Item {bill} deleted successfully!',
       failed_delete: 'Failed to delete item',
+      updated_ok: 'Item updated successfully!',
+      failed_update: 'Failed to update item',
+
       push_task: 'StitchWell Task',
       push_update: 'You have a new task update',
       new_task_title: 'New task: Bill #{bill} ({type})',
@@ -401,7 +410,8 @@ const translations = {
       actions: {
         created_by_admin: 'Item created by Admin',
         assigned_for_stage: 'Assigned to {name} for {stage}',
-        completed_stage: '{stage} completed'
+        completed_stage: '{stage} completed',
+        details_edited: 'Details edited: {changes}'
       },
       stage: {
         cutting: 'cutting',
@@ -488,6 +498,7 @@ const translations = {
       updated: 'अपडेटेड',
       actions: 'क्रियाएँ',
       delete: 'हटाएँ',
+      edit: 'संपादित करें',
       empty: 'कोई आइटम नहीं मिला',
       assign_tailor: 'टेलर असाइन करें...',
       override_assign: 'ओवरराइड असाइन...',
@@ -617,14 +628,7 @@ const translations = {
       cancel: 'रद्द करें',
       create: 'आइटम बनाएँ',
       creating: 'बना रहा है...',
-      error_select_type: 'कपड़े का प्रकार चुनें',
-      error_bill_required: 'बिल नंबर आवश्यक है',
-      error_bill_exists: 'यह बिल नंबर पहले से मौजूद है',
-      quantity: 'मात्रा *',
-      quantity_placeholder: 'मात्रा दर्ज करें',
-      error_quantity_min: 'मात्रा कम से कम 1 होनी चाहिए',
 
-      photos: 'फ़ोटो (वैकल्पिक)',
       add_photo: 'फ़ोटो जोड़ें',
       selected: 'चुना गया',
       photo_hint: 'कैमरा या गैलरी से चुनें',
@@ -645,6 +649,12 @@ const translations = {
     },
     photos: {
       delete: 'फोटो हटाएँ'
+    },
+    edit_item: {
+      title: 'आइटम संपादित करें',
+      subtitle: 'कपड़ा आइटम विवरण बदलें',
+      save: 'परिवर्तन सहेजें',
+      saving: 'सहेज रहा है...'
     },
     notif_panel: {
       title: 'सूचनाएँ',
@@ -701,6 +711,9 @@ const translations = {
       task_completed_moved: 'कार्य पूर्ण! आइटम {status} पर चला गया',
       failed_update_task: 'कार्य अपडेट करने में विफल',
       item_not_found: 'आइटम नहीं मिला!',
+      updated_ok: 'आइटम सफलतापूर्वक अपडेट हुआ!',
+      failed_update: 'आइटम अपडेट करने में विफल',
+
       no_valid_transition: 'कोई मान्य ट्रांज़िशन उपलब्ध नहीं!',
       only_admin_delete: 'केवल एडमिन आइटम हटा सकते हैं!',
       deleted_ok: 'आइटम {bill} सफलतापूर्वक हटाया गया!',
@@ -789,7 +802,8 @@ const translations = {
       actions: {
         created_by_admin: 'एडमिन द्वारा आइटम बनाया गया',
         assigned_for_stage: '{stage} के लिए {name} को असाइन किया गया',
-        completed_stage: '{stage} पूर्ण'
+        completed_stage: '{stage} पूर्ण',
+        details_edited: 'विवरण संपादित: {changes}'
       },
       stage: {
         cutting: 'कटिंग',
