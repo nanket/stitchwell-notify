@@ -1,14 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, CheckCircle, Clock, Hash, User, Trash2 } from 'lucide-react';
+import { Search, CheckCircle, Clock, Hash, User, UserPlus, Trash2 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { useI18n } from '../i18n';
 import ConfirmDialog from './ConfirmDialog';
 
-const SUIT_WORKERS = ['Abdullah Master', 'Aman', 'Rafiqu'];
-
 const AdminSuitTracking = () => {
   const { t } = useI18n();
-  const { clothItems, suitAssignments, assignSuitToWorker, markSuitAsReady, deleteSuitAssignment } = useStore();
+  const { clothItems, suitAssignments, suitWorkers, addSuitWorker, assignSuitToWorker, markSuitAsReady, deleteSuitAssignment } = useStore();
   
   const [billNumber, setBillNumber] = useState('');
   const [selectedWorker, setSelectedWorker] = useState('');
@@ -16,11 +14,25 @@ const AdminSuitTracking = () => {
   const [filterStatus, setFilterStatus] = useState(''); // 'all', 'pending', 'ready'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showAddWorker, setShowAddWorker] = useState(false);
+  const [newWorkerName, setNewWorkerName] = useState('');
+  const [isAddingWorker, setIsAddingWorker] = useState(false);
 
-  // Get all bill numbers from cloth items
-  const availableBills = useMemo(() => {
-    return Array.from(new Set(clothItems.map(item => item.billNumber))).sort();
-  }, [clothItems]);
+  const handleAddWorker = async (e) => {
+    e.preventDefault();
+    if (isAddingWorker || !newWorkerName.trim()) return;
+    setIsAddingWorker(true);
+    try {
+      const name = await addSuitWorker(newWorkerName);
+      if (name) {
+        setSelectedWorker(name);
+        setNewWorkerName('');
+        setShowAddWorker(false);
+      }
+    } finally {
+      setIsAddingWorker(false);
+    }
+  };
 
   // Filter suit assignments based on search and status
   const filteredAssignments = useMemo(() => {
@@ -155,6 +167,33 @@ const AdminSuitTracking = () => {
         </div>
       </div>
 
+      {showAddWorker && (
+        <form onSubmit={handleAddWorker} className="card space-y-3" aria-label={t('suit.add_worker')}>
+          <label htmlFor="new-suit-worker" className="block text-sm font-medium text-gray-700">
+            {t('suit.worker_name')}
+          </label>
+          <input
+            id="new-suit-worker"
+            value={newWorkerName}
+            onChange={e => setNewWorkerName(e.target.value)}
+            placeholder={t('suit.worker_name_placeholder')}
+            className="input w-full"
+            maxLength={80}
+            disabled={isAddingWorker}
+            autoFocus
+            required
+          />
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className="btn-primary px-4 py-2" disabled={isAddingWorker || !newWorkerName.trim()}>
+              {isAddingWorker ? t('suit.adding_worker') : t('suit.add_worker')}
+            </button>
+            <button type="button" className="btn-secondary px-4 py-2" disabled={isAddingWorker} onClick={() => { setShowAddWorker(false); setNewWorkerName(''); }}>
+              {t('common.cancel')}
+            </button>
+          </div>
+        </form>
+      )}
+
       {/* Assignment Form */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('suit.assign_form_title')}</h3>
@@ -182,7 +221,7 @@ const AdminSuitTracking = () => {
 
             {/* Worker Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="suit-worker" className="block text-sm font-medium text-gray-700 mb-2">
                 {t('suit.select_worker')}
               </label>
               <div className="relative">
@@ -190,17 +229,27 @@ const AdminSuitTracking = () => {
                   <User className="h-4 w-4 text-gray-400" />
                 </div>
                 <select
+                  id="suit-worker"
                   value={selectedWorker}
                   onChange={(e) => setSelectedWorker(e.target.value)}
                   className="select pl-10"
                   required
                 >
                   <option value="">{t('suit.choose_worker')}</option>
-                  {SUIT_WORKERS.map(worker => (
+                  {suitWorkers.map(worker => (
                     <option key={worker} value={worker}>{worker}</option>
                   ))}
                 </select>
               </div>
+              <button
+                type="button"
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800 py-1"
+                onClick={() => setShowAddWorker(true)}
+                aria-expanded={showAddWorker}
+              >
+                <UserPlus className="h-4 w-4" />
+                {t('suit.add_worker')}
+              </button>
             </div>
           </div>
 
@@ -349,4 +398,3 @@ const AdminSuitTracking = () => {
 };
 
 export default AdminSuitTracking;
-

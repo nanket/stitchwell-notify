@@ -388,6 +388,13 @@ const translations = {
       bill_placeholder: 'Enter bill number',
       select_worker: 'Select Worker',
       choose_worker: 'Choose a worker...',
+      add_worker: 'Add worker',
+      worker_name: 'New suit worker name',
+      worker_name_placeholder: 'Enter worker name',
+      adding_worker: 'Adding worker...',
+      worker_added: 'Suit worker added',
+      worker_exists: 'This suit worker already exists',
+      worker_add_failed: 'Could not add worker. Please try again.',
       assign_suit: 'Assign Suit',
       assigning: 'Assigning...',
       assignments_title: 'Suit Assignments',
@@ -780,6 +787,13 @@ const translations = {
       bill_placeholder: 'बिल नंबर दर्ज करें',
       select_worker: 'कारीगर चुनें',
       choose_worker: 'कारीगर चुनें...',
+      add_worker: 'कारीगर जोड़ें',
+      worker_name: 'नए सूट कारीगर का नाम',
+      worker_name_placeholder: 'कारीगर का नाम दर्ज करें',
+      adding_worker: 'कारीगर जोड़ रहे हैं...',
+      worker_added: 'सूट कारीगर जोड़ दिया गया',
+      worker_exists: 'यह सूट कारीगर पहले से मौजूद है',
+      worker_add_failed: 'कारीगर नहीं जोड़ सके। कृपया फिर से कोशिश करें।',
       assign_suit: 'सूट असाइन करें',
       assigning: 'असाइन कर रहे हैं...',
       assignments_title: 'सूट असाइनमेंट',
@@ -890,4 +904,3 @@ export function I18nProvider({ children }) {
 export function useI18n() {
   return useContext(I18nContext);
 }
-
