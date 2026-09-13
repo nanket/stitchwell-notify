@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import toast from 'react-hot-toast';
-import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, getDoc, arrayUnion, arrayRemove, writeBatch, limit } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, getDoc, arrayUnion, arrayRemove, writeBatch, limit, runTransaction } from 'firebase/firestore';
 import { initFirebase } from '../firebase';
 import { tGlobal, translateStatus, translateClothType } from '../i18n';
 
@@ -17,11 +17,13 @@ let _unsubCloth = null;
 let _unsubWorkers = null;
 let _unsubNotifs = null;
 let _unsubSuits = null;
+const SUIT_WORKERS_DOC = '_suitWorkers';
+const INITIAL_SUIT_WORKERS = ['Abdullah Master', 'Aman', 'Rafiqu'];
 
 async function seedWorkersIfEmpty(db) {
   // Seed Firestore with initialWorkers if the collection is empty
   const snap = await getDocs(collection(db, 'workers'));
-  if (snap.empty) {
+  if (snap.docs.every(d => d.id === SUIT_WORKERS_DOC)) {
     const batchPromises = Object.entries(initialWorkers).map(([role, names]) =>
       setDoc(doc(db, 'workers', role), { list: names, updatedAt: serverTimestamp() }, { merge: true })
     );
@@ -287,6 +289,7 @@ const useStore = create(
 
       // Suit assignments
       suitAssignments: [],
+      suitWorkers: INITIAL_SUIT_WORKERS,
 
       // Actions
       setCurrentUser: (user, role) => {
@@ -890,12 +893,16 @@ const useStore = create(
           if (_unsubWorkers) _unsubWorkers();
           _unsubWorkers = onSnapshot(collection(db, 'workers'), async (snap) => {
             // Seed defaults on first run when collection is empty
-            if (snap.empty) {
+            const suitWorkersDoc = snap.docs.find(d => d.id === SUIT_WORKERS_DOC);
+            set({ suitWorkers: suitWorkersDoc?.data()?.list || INITIAL_SUIT_WORKERS });
+            if (snap.docs.every(d => d.id === SUIT_WORKERS_DOC)) {
               try { await seedWorkersIfEmpty(db); } catch (_) {}
               return; // next snapshot will populate
             }
             const map = {};
-            snap.docs.forEach(docSnap => { map[docSnap.id] = docSnap.data()?.list || []; });
+            snap.docs.forEach(docSnap => {
+              if (docSnap.id !== SUIT_WORKERS_DOC) map[docSnap.id] = docSnap.data()?.list || [];
+            });
             set({ workers: map });
             // Ensure any unassigned threading items are assigned
             try { await fixUnassignedItems(db, map); } catch (_) {}
@@ -1414,6 +1421,30 @@ const useStore = create(
       },
 
       // Suit tracking functions
+      addSuitWorker: async (rawName) => {
+        const name = rawName.trim().replace(/\s+/g, ' ');
+        if (!name || name.length > 80) return null;
+        try {
+          const db = await ensureDb();
+          const ref = doc(db, 'workers', SUIT_WORKERS_DOC);
+          // A transaction prevents simultaneous additions from replacing each other.
+          await runTransaction(db, async (transaction) => {
+            const snapshot = await transaction.get(ref);
+            const list = snapshot.data()?.list || INITIAL_SUIT_WORKERS;
+            if (list.some(worker => worker.trim().replace(/\s+/g, ' ').toLowerCase() === name.toLowerCase())) {
+              throw new Error('duplicate-suit-worker');
+            }
+            transaction.set(ref, { list: [...list, name], updatedAt: serverTimestamp() }, { merge: true });
+          });
+          set(state => ({ suitWorkers: [...new Set([...state.suitWorkers, name])] }));
+          toast.success(tGlobal('suit.worker_added'));
+          return name;
+        } catch (e) {
+          toast.error(tGlobal(e.message === 'duplicate-suit-worker' ? 'suit.worker_exists' : 'suit.worker_add_failed'));
+          return null;
+        }
+      },
+
       assignSuitToWorker: async (billNumber, workerName, customerName = null) => {
         try {
           const db = await ensureDb();
